@@ -6,12 +6,17 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 
 # custom data sets
+
+# Get cpu or gpu device for training.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using {device} device")
+
 class CustomDataset(Dataset): 
     def __init__(self, data, labels):
 
    
-        self.data = torch.tensor(data)
-        self.labels = torch.tensor(labels)
+        self.data = torch.tensor(data, dtype=torch.float32)
+        self.labels = torch.tensor(labels, dtype=torch.int64)
 
     def __len__(self):
         return len(self.labels)
@@ -40,54 +45,103 @@ test_data = [[0,1,0,0,0],
         [1,1,1,0,0],
         [0,0,1,1,1],
         [1,0,0,1,0],
-        [1,1,1,1,0]]
-test_labels = [2,3,5,4,2,6,6,3,8] 
+        [1,1,1,1,0],
+        [1,1,1,1,1],#from train
+        [0,0,1,0,0],]#from train
+test_labels = [2,3,5,4,2,6,6,3,8,9,3] 
+
 
 training_data = CustomDataset(train_data, train_labels)
 test_data = CustomDataset(test_data, test_labels)
 
 # Create data loaders.
-train_dataloader = DataLoader(training_data)
-test_dataloader = DataLoader(test_data)
+train_dataloader = DataLoader(dataset=training_data, shuffle=True)
+test_dataloader = DataLoader(dataset=test_data, shuffle=False)
+
+examples = iter(train_dataloader)
+samples, labels = examples.next()
+print(samples.shape, labels.shape)
 
 for X, y in test_dataloader:
     print(f"Shape of X [N, C, H, W]: {X.shape}")
     print(f"Shape of y: {y.shape} {y.dtype}")
     break
 
-# Get cpu or gpu device for training.
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
+#hyper parameters
+input_size = 5
+hidden_size = 10
+num_classes = 10
+num_epochs = 500
+#batch_size = 1
+learning_rate = 0.005
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(5, 10),
-            nn.ReLU(),
-            #nn.Linear(10, 10),
-            #nn.ReLU(),
-            #nn.Linear(10, 10)
-        )
+    def __init__(self, input_size, hidden_size, num_classes):
+        super(NeuralNetwork, self).__init__()
+        self.linear1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.linear2 = nn.Linear(hidden_size, num_classes)
+        
 
     def forward(self, x):
-        #x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
+        out = self.linear1(x)
+        out = self.relu(out)
+        out = self.linear2(out)
+        #no softmax here, because we use CE loss later
+        return out
 
 
-model = NeuralNetwork().to(device)
-print(model)
+model = NeuralNetwork(input_size, hidden_size, num_classes).to(device)
+#print(model)
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+print(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-def train(dataloader, model, loss_fn, optimizer):
+def train():
+    n_total_steps = len(train_dataloader)
+    for epoch in range(num_epochs):
+        for i, (x, y) in enumerate(train_dataloader):
+            x = x.reshape(-1, 5).to(device)
+            y = y.to(device)
+
+            outputs = model(x)
+            loss = loss_fn(outputs, y)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        if (epoch+1) % 10 == 0:
+                print(f'epoch {epoch+1} / {num_epochs}, step {i+1} / {n_total_steps}, loss = {loss.item():.4f}')
+                test()
+
+def test():
+    n_correct = 0
+    n_samples = 0
+    for x, y in test_dataloader:
+        x = x.reshape(-1, 5).to(device)
+        y = y.to(device)
+        outputs = model(x)
+
+        #value, index
+        _, predictions = torch.max(outputs, 1)
+        n_samples += y.shape[0]
+        n_correct += (predictions == y).sum().item()
+
+    acc = 100.0 * n_correct / n_samples
+    print(f'Test finished, accuracy = {acc:.2f}%')
+
+test()
+train()
+
+
+
+
+"""def train(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
-    model.train()
-    for (X, y) in dataloader:
+    for (X, y) in train_dataloader:
         print(X.size())
         X, y = X.to(device), y.to(device)
 
@@ -100,6 +154,5 @@ def train(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
         loss, current = loss.item(), len(X)
-        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")"""
 
-train(train_dataloader, model, loss_fn, optimizer)
