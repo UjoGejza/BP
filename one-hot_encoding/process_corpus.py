@@ -1,11 +1,12 @@
 import torch
 
 #from txt data creates structured data in format:
-#ID<index> <sample>
+#ID<index> 
+#<sample>
 #<sample>
 def process_corpus(file:str):
     f = open(file, "r", encoding="utf8")
-    o = open('one-hot_encoding/dataset/corpus_processed.txt', "w")
+    o = open('one-hot_encoding/data/corpus_processed.txt', "w")
     id = 0
     sample_length = 50
     rest_of_line = ''
@@ -32,7 +33,7 @@ def process_corpus(file:str):
 
 def add_typos(file:str, prob:float):
     f = open(file, "r")
-    o = open('one-hot_encoding/dataset/corpus_processed_with_typos.txt', "w")
+    o = open('one-hot_encoding/data/corpus_processed_with_typos.txt', "w")
     position = 0
     lines = f.readlines()
     IDs = lines[0::3]
@@ -51,8 +52,8 @@ def add_typos(file:str, prob:float):
     f.close()
     o.close()
 
-process_corpus('one-hot_encoding/dataset/corpus.txt')
-add_typos('one-hot_encoding/dataset/corpus_processed.txt', 0.05)
+process_corpus('one-hot_encoding/data/corpus.txt')
+add_typos('one-hot_encoding/data/corpus_processed.txt', 0.05)
 
 
 

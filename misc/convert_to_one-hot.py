@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 def add_typos(file:str, prob:float):
     f = open(file, "r")
-    o = open('one-hot_encoding/dataset/corpus_with_typos.txt', "w")
+    o = open('one-hot_encoding/data/corpus_with_typos.txt', "w")
     position = 0
     for line in f:
         for i,character in enumerate(line):
@@ -40,13 +40,13 @@ def convert_to_one_hot(file:str) -> torch.Tensor:
                 data[position+i] = torch.zeros(26)
         position = position + i+1
 
-    o = open("one-hot_encoding/dataset/output.txt", 'w')
+    o = open("one-hot_encoding/data/output.txt", 'w')
     np.set_printoptions(threshold=np.inf)
     print(data.numpy(), file=o)
     o.close()
     f.close()
     return data
 
-filepath = "one-hot_encoding/dataset/corpus.txt"
+filepath = "one-hot_encoding/data/corpus.txt"
 one_hot_tensor = convert_to_one_hot(filepath)
 add_typos(filepath, 0.03)
