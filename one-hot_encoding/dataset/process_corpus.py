@@ -15,7 +15,7 @@ def process_corpus(file:str):
         sample = rest_of_line + sample
         if len(sample) != sample_length: break
         while sample.find('\n')==-1:
-            o.write(f'ID{id} ')
+            o.write(f'ID{id}\n')
             o.write(sample+'\n')
             o.write(sample+'\n')
             id += 1
@@ -34,10 +34,15 @@ def add_typos(file:str, prob:float):
     f = open(file, "r")
     o = open('one-hot_encoding/dataset/corpus_processed_with_typos.txt', "w")
     position = 0
-    for line in f:
-        o.write(line)
-        line = f.readline()
-        for i,character in enumerate(line):
+    lines = f.readlines()
+    IDs = lines[0::3]
+    clear = lines[1::3]
+    dirty = lines[2::3]
+
+    for idx, id in enumerate(IDs):
+        o.write(id)
+        o.write(clear[idx])
+        for i,character in enumerate(dirty[idx]):
             if ((character>='A'<='Z') or (character>='a'<='z') ):
                 if torch.rand(1).item()<=prob:
                     character = chr(int((torch.rand(1).item()*26)) + 97)
