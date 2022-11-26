@@ -4,7 +4,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from dataset.py import MyDataset
-from model.py import NeuralNetwork
+from models.py import NeuralNetwork
 
 MD = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
 data_loader = DataLoader(MD, batch_size=32)

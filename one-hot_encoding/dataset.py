@@ -1,84 +1,92 @@
 import torch
 from torch.utils.data import Dataset
+import numpy as np
 
 
 class MyDataset(Dataset):
     def __init__(self, file:str):
-        self.f = open(file, "r", encoding="cp1252") #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
-        self.charlist = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 
-                        'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', ',', '.', '!', 
-                        '?', '\'', '\"', '’', '-', '+', '…', '“', '”', '(', ')', ':', '/', ';']#add uppercase
-        numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        self.charlist = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+         'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 
+         'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '¡', '?', '¿', ',', '—', '…', '”', '“',
+         '.', '·', ':', ';', '\\', '_', '&', '#', '@', '(', ')', '[', ']', '{', '}', '+', '-', '*', '/', '±', '=', '≠', '<', '>', '≤', 
+         '≥', 'ϵ', '∞', '%', '‰', '£', '€', '$', '§', '©', '®', '℥', "'", '‘', '’', '`', '„', '“', '"', '»', '«', '›', '‹', '☞', '☜', 
+         '^', '~', '°', '˛', '†', '|', '⁂', '⊥', '¬', '¤', 'Á', 'Č', 'Ď', 'É', 'Ě', 'Í', 'Ň', 'Ó', 'Ř', 'Š', 'Ť', 'Ú', 'Ů', 'Ý', 'Ž',
+        'á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž']
 
-        latin = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
-         'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-         's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
-        symbols = ['!', '¡', '?', '¿', ',', '—', '.', '·', ':', ';', '\\', '_', '&', '#', '@', '(', ')', '[', ']', '{', '}', '+',
-           '-', '*', '/', '±', '=', '≠', '<', '>', '≤', '≥', 'ϵ', '∞', '%', '‰', '£', '€', '$', '§', '©', '®', '℥', "'",
-           '‘', '’', '`', '„', '“', '"', '»', '«', '›', '‹', '☞', '☜', '^', '~', '°', '˛', '†', '|', '⁂', '⊥', '¬', '¤']
+        with open(file, "r", encoding="cp1252") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
+            lines = f.readlines()
+        sample_count = len(lines)//3
+        sample_size = len(lines[1])-1#ignore '\n'?
+        channels = len(self.charlist)
+        
+        self.IDs = torch.zeros(sample_count)
+        self.ok_samples = torch.zeros(sample_count, sample_size)
+        self.bad_samples = torch.zeros(sample_count, sample_size)
+        self.labels = torch.zeros(sample_count, sample_size)
+        self.ok_samples_one_hot = torch.zeros(sample_count, sample_size, channels)
+        self.bad_samples_one_hot = torch.zeros(sample_count, sample_size, channels)
+        self.ok_text = np.ndarray(shape=(sample_count, sample_size))
+        self.bad_text = np.ndarray(shape=(sample_count, sample_size))
 
-        czech_special = ['Á', 'Č', 'Ď', 'É', 'Ě', 'Í', 'Ň', 'Ó', 'Ř', 'Š', 'Ť', 'Ú', 'Ů', 'Ý', 'Ž',
-                 'á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž']
-        #todo refactor
-        self.clear_samples = torch.zeros(1750, 50)#correct line of text
-        self.dirty_samples = torch.zeros(1750, 50)#same line with typos
-        self.labels = torch.zeros(1750, 50)
-        self.IDs = torch.zeros(1750)
-        lnum = 0
+        self.IDs = lines[::3]
+        self.ok_text = lines[1::3]
+        self.bad_text = lines[2::3]
 
-        for line in self.f:
-            line = line.lower()
-            line = line[:-1]
+        for index,id in enumerate(self.IDs):
+            id = int(id[2:])
+            self.IDs[index] = id
 
-            if lnum % 2 == 0:#correct line
-                #get ID
-                id_idx = line.find(' ')
-                self.IDs[lnum//2] = int(line[2:id_idx])
+            self.ok_text[index] = self.ok_text[index][:-1]#ignore '\n'
+            self.bad_text[index] = self.bad_text[index][:-1]#ignore '\n'
+            
+            sample = []
+            for i,character in enumerate(self.ok_text[index]):
+                sample.append(self.charlist.index(character))
+                self.ok_samples_one_hot[index][i][self.charlist.index(character)] = 1
+            self.ok_samples[index] = torch.tensor(sample)
+            
+            sample = []            
+            for i,character in enumerate(self.bad_text[index]):
+                sample.append(self.charlist.index(character))
+                self.bad_samples_one_hot[index][i][self.charlist.index(character)] = 1
+            self.bad_samples[index] = torch.tensor(sample)
 
-                line = line[id_idx+1:]
-                sample = []
-                for character in line:
-                    sample.append(self.charlist.index(character))
-                sample_tensor = torch.tensor(sample)
-                self.clear_samples[lnum//2] = sample_tensor
-               
-            else:#dirty line
-                 #add typos
-                '''for i,character in enumerate(line):
-                    if (character>='a'<='z'):
-                        if torch.rand(1).item()<=0.1:
-                            line = line.replace(character, self.charlist[int((torch.rand(1).item()*26))], 1)'''
-                
-                sample = []
-                for character in line:
-                    sample.append(self.charlist.index(character))
-                sample_tensor = torch.tensor(sample)
-                self.dirty_samples[lnum//2] = sample_tensor
+            self.labels[index] = torch.tensor([1 if ok == bad else 0 for ok, bad in zip(self.ok_samples[index], self.bad_samples[index])])
 
-                mask = self.clear_samples[lnum//2] == self.dirty_samples[lnum//2]
-                label = torch.ones_like(mask, dtype=float)
-                for i,value in enumerate(mask):
-                    if value == False: 
-                        label[i] = 0
-                self.labels[lnum//2] = label
-            lnum += 1
 
-    
     def __len__(self):
-        return len(self.clear_samples)
+        return len(self.ok_samples)
+
 
     def __getitem__(self, idx):
-        #TODO prevod na one-hot
+        #maybe move convert to one-hot here, idk
         return {'id': self.IDs[idx],
-                'clear_sample': self.clear_samples[idx],
-                'dirty_sample': self.dirty_samples[idx],
-                'label': self.labels[idx]}
+                'ok_sample': self.ok_samples[idx],
+                'bad_sample': self.bad_samples[idx],
+                'ok_sample_one_hot': self.ok_samples_one_hot[idx],
+                'bad_sample_one_hot': self.bad_samples_one_hot[idx],
+                'ok_text': self.ok_text[idx],
+                'bad_text': self.bad_text[idx],
+                'label': self.labels[idx],}
+
+
 
 MD = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
-item = MD.__getitem__(500)
-print(MD.__len__())
-print(item)
+item = MD.__getitem__(1637)
+o = open("one-hot_encoding/data/output.txt", 'w')
+np.set_printoptions(threshold=np.inf)
+    
+print(MD.__len__(), file = o)
+print(item['id'], file = o)
+print(item['ok_text'], file = o)
+print(item['bad_text'], file = o)
+print(item['ok_sample'], file = o)
+print(item['bad_sample'], file = o)
+print(item['ok_sample_one_hot'].numpy(), file = o)
+print(item['bad_sample_one_hot'].numpy(), file = o)
+
+o.close()
 
 
 
