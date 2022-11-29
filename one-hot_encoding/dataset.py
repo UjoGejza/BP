@@ -71,9 +71,9 @@ class MyDataset(Dataset):
                 'label': self.labels[idx],}
 
 
-
+#remove this
 MD = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
-item = MD.__getitem__(1637)
+item = MD.__getitem__(44)
 o = open("one-hot_encoding/data/output.txt", 'w')
 np.set_printoptions(threshold=np.inf)
     

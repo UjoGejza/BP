@@ -2,6 +2,13 @@ import torch
 
 a = [4, 2, 5, 7]
 b = [4, 2, 1, 7]
+torch2d = torch.rand((3, 4))
+
+print(torch2d)
+
+torch2d = torch.reshape(torch2d, (6, -1))
+
+print(torch2d)
 
 at = torch.tensor(a)
 bt = torch.tensor(b)
