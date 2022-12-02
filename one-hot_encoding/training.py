@@ -9,10 +9,12 @@ import ansi_print
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-training_data = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
-training_data_loader = DataLoader(training_data, batch_size=128, shuffle = True)
-testing_data = MyDataset('one-hot_encoding/data/corpus_test_processed_with_typos.txt')
-testing_data_loader = DataLoader(testing_data, shuffle=True)
+training_data = MyDataset('data/corpus_processed_with_typos.txt')
+training_data_loader = DataLoader(training_data, batch_size=32, shuffle = True)
+testing_test_data = MyDataset('data/corpus_test_processed_with_typos.txt')
+testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
+testing_train_data = MyDataset('data/corpus_train_test_processed_with_typos.txt')
+testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 #shape: batch = 32, C = 1, H = 1, W(T) = 50.
 
 for x in training_data_loader:
@@ -27,7 +29,7 @@ model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
 print(model.parameters())
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 def train():
     n_total_steps = len(training_data_loader)
@@ -44,9 +46,9 @@ def train():
         
         print(f'epoch {epoch+1}, loss = {loss.item():.4f}')
         print('Train data test:')
-        test(training_data_loader)
+        test(testing_train_data_loader)
         print('\033[0;34mTest data test:\033[0;37m')
-        test(testing_data_loader)
+        test(testing_test_data_loader)
 
 def test(data_loader):
     correct = 0

@@ -54,8 +54,8 @@ def add_typos(file:str, prob:float):
     f.close()
     o.close()
 
-process_corpus('one-hot_encoding/data/wikipedia_test.txt')
-add_typos('one-hot_encoding/data/wikipedia_test_processed.txt', 0.1)
+process_corpus('one-hot_encoding/data/corpus_test.txt')
+add_typos('one-hot_encoding/data/corpus_test_processed.txt', 0.1)
 
 
 

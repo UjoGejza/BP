@@ -14,7 +14,7 @@ class MyDataset(Dataset):
         'á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž']
 
 
-        with open(file, "r", encoding="cp1252") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
+        with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
         sample_count = len(lines)//3
         sample_size = len(lines[1])-1#ignore '\n'?
@@ -69,24 +69,6 @@ class MyDataset(Dataset):
                 'ok_text': self.ok_text[idx],
                 'bad_text': self.bad_text[idx],
                 'label': self.labels[idx],}
-
-
-#remove this
-MD = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
-item = MD.__getitem__(44)
-o = open("one-hot_encoding/data/output.txt", 'w')
-np.set_printoptions(threshold=np.inf)
-    
-print(MD.__len__(), file = o)
-print(item['id'], file = o)
-print(item['ok_text'], file = o)
-print(item['bad_text'], file = o)
-print(item['ok_sample'], file = o)
-print(item['bad_sample'], file = o)
-print(item['ok_sample_one_hot'].numpy(), file = o)
-print(item['bad_sample_one_hot'].numpy(), file = o)
-
-o.close()
 
 
 
