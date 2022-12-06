@@ -38,3 +38,5 @@ class NeuralNetworkOneHot(nn.Module):
         out = self.sigmoid(out)
         
         return out
+
+#conv1d model
