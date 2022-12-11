@@ -8,4 +8,5 @@
 /fashion_model_1.pth
 /.vscode
 /one-hot_encoding/data
+/wandb
 

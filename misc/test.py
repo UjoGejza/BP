@@ -1,5 +1,4 @@
 import torch
-from datasets import load_dataset
 
 #load_dataset("wikipedia", "20220301.simple")
 
@@ -20,6 +19,22 @@ class bcolors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+
+pismeno1 = torch.tensor([0, 0, 1, 0, 0, 0])
+pismeno2 = torch.tensor([1, 0, 0, 0, 0, 0])
+pismeno3 = torch.tensor([0, 1, 0, 0, 0, 0])
+
+slovo = torch.zeros(3, 6)
+slovo[0] = pismeno1
+slovo[1] = pismeno2
+slovo[2] = pismeno3
+
+print(slovo)
+print(slovo.shape)
+
+slovo = slovo.reshape(6,3)
+print(slovo)
+print(slovo.shape)
 
 a = [4, 2, 5, 7]
 b = [4, 2, 1, 7]

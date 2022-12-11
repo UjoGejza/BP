@@ -4,18 +4,31 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from dataset import MyDataset
-from models import NeuralNetworkOneHot, NeuralNetwork
+from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv
 import ansi_print
+
+import wandb
+
+wandb.init(project="my-test-project-BP")
+
+wandb.config = {
+  "learning_rate": 0.0005,
+  "epochs": 100,
+  "batch_size": 30
+}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-training_data = MyDataset('data/corpus_processed_with_typos.txt')
-training_data_loader = DataLoader(training_data, batch_size=32, shuffle = True)
-testing_test_data = MyDataset('data/corpus_test_processed_with_typos.txt')
+batch_size = wandb.config['batch_size']
+epochs = wandb.config['epochs']
+learning_rate = wandb.config['learning_rate']
+
+training_data = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
+training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
+testing_test_data = MyDataset('one-hot_encoding/data/corpus_test_processed_with_typos.txt')
 testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
-testing_train_data = MyDataset('data/corpus_train_test_processed_with_typos.txt')
+testing_train_data = MyDataset('one-hot_encoding/data/corpus_train_test_processed_with_typos.txt')
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
-#shape: batch = 32, C = 1, H = 1, W(T) = 50.
 
 for x in training_data_loader:
     print(x['bad_sample'].shape)
@@ -24,17 +37,19 @@ for x in training_data_loader:
     print(x['bad_sample_one_hot'].shape)
     break
 
-model = NeuralNetworkOneHot()
+model = NeuralNetworkOneHotConv()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
 print(model.parameters())
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 def train():
     n_total_steps = len(training_data_loader)
-    for epoch in range(200):
+    for epoch in range(epochs):
         for i, item in enumerate(training_data_loader):
+            item['bad_sample_one_hot'] = item['bad_sample_one_hot'].reshape(batch_size, 162, -1)
+            #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
             item['label'] = item['label'].to(device)
             outputs = model(item['bad_sample_one_hot'])
@@ -43,19 +58,24 @@ def train():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        
-        print(f'epoch {epoch+1}, loss = {loss.item():.4f}')
-        print('Train data test:')
-        test(testing_train_data_loader)
-        print('\033[0;34mTest data test:\033[0;37m')
-        test(testing_test_data_loader)
+        with torch.no_grad():
+            print(f'epoch {epoch+1}, loss = {loss.item():.4f}')
+            wandb.log({"loss": loss})
+            # Optional
+            wandb.watch(model)
+            print('Train data test:')
+            test(testing_train_data_loader)
+            print('\033[0;34mTest data test:\033[0;37m')
+            test(testing_test_data_loader)
 
 def test(data_loader):
     correct = 0
     all = 0
     for item in data_loader:
+        item['bad_sample_one_hot'] = item['bad_sample_one_hot'].reshape(1, 162, 50)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
         item['label'] = item['label'].to(device)
+        #print(item['bad_sample_one_hot'].shape)
         outputs = model(item['bad_sample_one_hot'])
         outputs = outputs[0]
         item['label'] = item['label'][0]
