@@ -42,12 +42,14 @@ class MyDataset(Dataset):
             
             sample = []
             for i,character in enumerate(self.ok_text[index]):
+                if (character not in self.charlist): character = ' '
                 sample.append(self.charlist.index(character))
                 self.ok_samples_one_hot[index][i][self.charlist.index(character)] = 1
             self.ok_samples[index] = torch.tensor(sample)
             
             sample = []            
             for i,character in enumerate(self.bad_text[index]):
+                if (character not in self.charlist): character = ' '
                 sample.append(self.charlist.index(character))
                 self.bad_samples_one_hot[index][i][self.charlist.index(character)] = 1
             self.bad_samples[index] = torch.tensor(sample)

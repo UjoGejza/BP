@@ -32,9 +32,13 @@ slovo[2] = pismeno3
 print(slovo)
 print(slovo.shape)
 
-slovo = slovo.reshape(6,3)
+slovo = slovo.transpose(0, 1)
 print(slovo)
 print(slovo.shape)
+print(pismeno1)
+pismeno1 = pismeno1.reshape(1, -1)
+
+print(pismeno1)
 
 a = [4, 2, 5, 7]
 b = [4, 2, 1, 7]
