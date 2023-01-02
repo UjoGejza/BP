@@ -28,7 +28,7 @@ batch_size = 30
 epochs = 150
 learning_rate = 0.0006
 
-training_data = MyDataset('one-hot_encoding/data/corpus_processed_with_typos.txt')
+training_data = MyDataset('one-hot_encoding/data/corpus_processed.txt')
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
 testing_test_data = MyDataset('one-hot_encoding/data/corpus_test_processed_with_typos.txt')
 testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
@@ -48,11 +48,31 @@ model.to(device)
 loss_fn = nn.BCELoss()
 print(model.parameters())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+def typos(item):
+    for i_batch, samples in enumerate(item['label']):
+        bad_sample = []
+        for i_sample, character in enumerate(item['ok_text'][i_batch]):
+            if ((character>='A'<='Z') or (character>='a'<='z') ):
+                if torch.rand(1).item()<=0.1:
+                    character = chr(int((torch.rand(1).item()*26)) + 97)
+                    if character != item['ok_text'][i_batch][i_sample]: 
+                        item['label'][i_batch][i_sample] = 0
+                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(162)#training_data.channels
+                        item['bad_sample_one_hot'][i_batch][i_sample][training_data.charlist.index(character)] = 1
+                        item['bad_sample'][i_batch][i_sample] = training_data.charlist.index(character)
+            bad_sample.append(character)
+        item['bad_text'][i_batch] = ''.join(bad_sample)
+    return item
+
+            
+
+        
 
 def train():
     #n_total_steps = len(training_data_loader)
     for epoch in range(epochs):
         for i, item in enumerate(training_data_loader):
+            item = typos(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
