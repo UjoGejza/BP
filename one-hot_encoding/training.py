@@ -96,7 +96,7 @@ def train():
 def test(data_loader):
     correct = 0
     all = 0
-    TP, FP, TN, FN = 0
+    TP, FP, TN, FN = 0, 0, 0, 0
     confiuson_matrix = torch.rand(2,2)
     for item in data_loader:
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -106,8 +106,9 @@ def test(data_loader):
         outputs = model(item['bad_sample_one_hot'])
         outputs = outputs[0]
         item['label'] = item['label'][0]
+        outputs = [1 if out>0.5 else 0 for out in outputs]
         for index, out in enumerate(outputs):
-            if abs(out - item['label'][index])<0.1:
+            if out == item['label'][index]:
                 correct += 1
             all +=1
             if item['label'][index] == 1 and out>0.5: TP +=1
@@ -118,9 +119,8 @@ def test(data_loader):
     confiuson_matrix[0][1] = FN
     confiuson_matrix[1][0] = FP
     confiuson_matrix[1][1] = TN
-    print('CM: ',confiuson_matrix)
+    print(confiuson_matrix)
     ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
-    outputs = [1 if out>0.9 else 0 for out in outputs]
     ansi_print.a_print(outputs, item['label'], 'red')
     acc = correct/all
     print(f'TEST: acc: {acc*100:.4f}%')
