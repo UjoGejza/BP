@@ -97,7 +97,7 @@ def test(data_loader):
     correct = 0
     all = 0
     TP, FP, TN, FN = 0, 0, 0, 0
-    confiuson_matrix = torch.rand(2,2)
+    confusion_matrix = torch.rand(2,2)
     for item in data_loader:
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -115,11 +115,11 @@ def test(data_loader):
             if item['label'][index] == 1 and out<=0.5: FN +=1
             if item['label'][index] == 0 and out>0.5: FP +=1
             if item['label'][index] == 0 and out<=0.5: TN +=1
-    confiuson_matrix[0][0] = TP
-    confiuson_matrix[0][1] = FN
-    confiuson_matrix[1][0] = FP
-    confiuson_matrix[1][1] = TN
-    print(confiuson_matrix)
+    confusion_matrix[0][0] = TP
+    confusion_matrix[0][1] = FN
+    confusion_matrix[1][0] = FP
+    confusion_matrix[1][1] = TN
+    print(confusion_matrix)
     ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
     ansi_print.a_print(outputs, item['label'], 'red')
     acc = correct/all
