@@ -94,9 +94,7 @@ def train():
             #test(testing_test_data_loader)
 
 def test(data_loader):
-    correct = 0
-    all = 0
-    TP, FP, TN, FN = 0, 0, 0, 0
+    TP, FP, TN, FN, TPR, PPV, F1, ACC_CM, TNR, BA = 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     confusion_matrix = torch.rand(2,2)
     for item in data_loader:
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -108,9 +106,6 @@ def test(data_loader):
         item['label'] = item['label'][0]
         outputs = [1 if out>0.5 else 0 for out in outputs]
         for index, out in enumerate(outputs):
-            if out == item['label'][index]:
-                correct += 1
-            all +=1
             if item['label'][index] == 1 and out>0.5: TP +=1
             if item['label'][index] == 1 and out<=0.5: FN +=1
             if item['label'][index] == 0 and out>0.5: FP +=1
@@ -120,10 +115,16 @@ def test(data_loader):
     confusion_matrix[1][0] = FP
     confusion_matrix[1][1] = TN
     print(confusion_matrix)
+    TPR = TP/(TP+FN) #sensitivity, recall, hit rate, or true positive rate (TPR)
+    TNR = TN/(TN+FP) #specificity, selectivity or true negative rate (TNR)
+    PPV = TP/(TP+FP) #precision or positive predictive value (PPV)
+    F1 = 2 * (PPV * TPR)/(PPV + TPR) #F1 score is the harmonic mean of precision and sensitivity:
+    ACC_CM = (TP + TN)/(TP + TN + FP + FN) #accuracy
+    BA = (TPR + TNR)/2 #balanced accuracy
     ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
     ansi_print.a_print(outputs, item['label'], 'red')
-    acc = correct/all
-    print(f'TEST: acc: {acc*100:.4f}%')
-
+    print(f'Accuracy: {ACC_CM*100:.2f}%')
+    print(f'Balanced accuracy: {BA*100:.2f}%')
+    print(f'Recall: {TPR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
 
 train()
