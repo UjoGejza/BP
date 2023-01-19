@@ -3,9 +3,11 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
+from numpy import random
+
 from dataset import MyDataset
 from process_corpus import add_typos
-from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv
+from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv1
 import ansi_print
 
 import wandb
@@ -42,13 +44,13 @@ for x in training_data_loader:
     print(x['bad_sample_one_hot'].shape)
     break
 
-model = NeuralNetworkOneHotConv()
+model = NeuralNetworkOneHotConv1()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
 print(model.parameters())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-def typos(item):
+def typos(item):#old very slow
     for i_batch, samples in enumerate(item['label']):
         bad_sample = []
         for i_sample, character in enumerate(item['ok_text'][i_batch]):
@@ -64,7 +66,20 @@ def typos(item):
         item['bad_text'][i_batch] = ''.join(bad_sample)
     return item
 
-            
+def add_typos(item):#used only during training
+    for i_batch, _ in enumerate(item['label']):
+        error_index = random.randint(50, size=(5))
+        error_char = random.randint(low=97, high=123, size=(5))
+        for i in range(5):
+            #item['bad_text'][i_batch][error_index[i]] = chr(error_char[i])
+            #'bad_text' is not updated with typos
+            if chr(error_char[i]) != item['ok_text'][i_batch][error_index[i]]:
+                item['label'][i_batch][error_index[i]] = 0
+                item['bad_sample_one_hot'][i_batch][error_index[i]] = torch.zeros(162)#training_data.channels
+                item['bad_sample_one_hot'][i_batch][error_index[i]][training_data.charlist.index(chr(error_char[i]))] = 1
+                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+    return item
+        
 
         
 

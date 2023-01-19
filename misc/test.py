@@ -1,4 +1,5 @@
 import torch
+from numpy import random
 
 #load_dataset("wikipedia", "20220301.simple")
 
@@ -19,6 +20,12 @@ class bcolors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+
+error_index = random.randint(50, size=(5))
+error_char = random.randint(low=97, high=123, size=(5))
+
+print(error_index)
+print(error_char)
 
 pismeno1 = torch.tensor([0, 0, 1, 0, 0, 0])
 pismeno2 = torch.tensor([1, 0, 0, 0, 0, 0])
