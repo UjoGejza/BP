@@ -33,6 +33,29 @@ def process_corpus(file:str):
     f.close()
     o.close()
 
+def insert_chars(file:str, prob:float):
+    f = open(file, "r", encoding="UTF-8")
+    o = open(file[:-4]+'_with_extra.txt', "w", encoding="UTF-8")
+    lines = f.readlines()
+    IDs = lines[0::3]
+    clear = lines[1::3]
+    dirty = lines[2::3]
+    for idx, id in enumerate(IDs):
+        o.write(id)
+        clear[idx] = list(clear[idx])
+        dirty[idx] = list(dirty[idx])
+        for i,character in enumerate(dirty[idx][0:-1]):
+            if torch.rand(1).item()<=prob:
+                character = chr(int((torch.rand(1).item()*26)) + 97)
+                clear[idx].insert(i,'#')
+                dirty[idx].insert(i,character)
+                clear[idx].pop(len(clear[idx])-2)
+                dirty[idx].pop(len(dirty[idx])-2)
+        o.write(''.join(clear[idx]))
+        o.write(''.join(dirty[idx]))
+    f.close()
+    o.close()
+
 def add_typos(file:str, prob:float):
     f = open(file, "r", encoding="UTF-8")
     o = open(file[:-4]+'_with_typos.txt', "w", encoding="UTF-8")
@@ -46,7 +69,7 @@ def add_typos(file:str, prob:float):
         o.write(id)
         o.write(clear[idx])
         for i,character in enumerate(dirty[idx]):
-            if ((character>='A'<='Z') or (character>='a'<='z') ):
+            if character !='\n':
                 if torch.rand(1).item()<=prob:
                     character = chr(int((torch.rand(1).item()*26)) + 97)
             o.write(character)
@@ -54,8 +77,10 @@ def add_typos(file:str, prob:float):
     f.close()
     o.close()
 
-process_corpus('one-hot_encoding/data/corpus_test.txt')
-add_typos('one-hot_encoding/data/corpus_test_processed.txt', 0.1)
+#process_corpus('one-hot_encoding/data/corpus_test.txt')
+#add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
+#add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
+insert_chars('one-hot_encoding/data/wiki-1k-train-debug-insert.txt', 0.025)
 
 
 

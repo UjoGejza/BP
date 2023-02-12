@@ -140,6 +140,6 @@ def test(data_loader):
     ansi_print.a_print(outputs, item['label'], 'red')
     print(f'Accuracy: {ACC_CM*100:.2f}%')
     print(f'Balanced accuracy: {BA*100:.2f}%')
-    print(f'Recall: {TPR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
+    print(f'Recall: {TPR:.4f}, TNR: {TNR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
 
 train()
