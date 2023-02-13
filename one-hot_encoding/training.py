@@ -6,11 +6,10 @@ from torch.utils.data import DataLoader
 from numpy import random
 
 from dataset import MyDataset
-from process_corpus import add_typos
-from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv1
+from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv2
 import ansi_print
 
-import wandb
+#import wandb
 
 #wandb.init(project="my-test-project-BP")
 
@@ -21,35 +20,38 @@ import wandb
 #}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+print(f'USING: {device}')
 #batch_size = wandb.config['batch_size']
 #epochs = wandb.config['epochs']
 #learning_rate = wandb.config['learning_rate']
 
-batch_size = 30
-epochs = 150
-learning_rate = 0.0006
+batch_size = 50
+epochs = 200
+learning_rate = 0.001
 
-training_data = MyDataset('one-hot_encoding/data/corpus_processed.txt')
+training_data = MyDataset('one-hot_encoding/data/wiki-20k.txt')
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
-testing_test_data = MyDataset('one-hot_encoding/data/corpus_test_processed_with_typos.txt')
+testing_test_data = MyDataset('one-hot_encoding/data/wiki-1k-test-insert-swap.txt')
 testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
-testing_train_data = MyDataset('one-hot_encoding/data/corpus_train_test_processed_with_typos.txt')
+testing_train_data = MyDataset('one-hot_encoding/data/wiki-1k-train-insert-swap.txt')
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
-for x in training_data_loader:
-    print(x['bad_sample'].shape)
-    print(x['label'].shape)
-    print(x['ok_sample_one_hot'].shape)
-    print(x['bad_sample_one_hot'].shape)
-    break
+#for x in training_data_loader:
+#    print(x['bad_sample'].shape)
+#    print(x['label'].shape)
+#    print(x['ok_sample_one_hot'].shape)
+#    print(x['bad_sample_one_hot'].shape)
+#    break
 
-model = NeuralNetworkOneHotConv1()
+model = NeuralNetworkOneHotConv2()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
-print(model.parameters())
+print(f'MODEL ARCHITECTURE: ')
+for name, param in model.state_dict().items():
+    print(name, param.size())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
 def typos(item):#old very slow
     for i_batch, samples in enumerate(item['label']):
         bad_sample = []
@@ -66,28 +68,53 @@ def typos(item):#old very slow
         item['bad_text'][i_batch] = ''.join(bad_sample)
     return item
 
-def add_typos(item):#used only during training
-    for i_batch, _ in enumerate(item['label']):
-        error_index = random.randint(50, size=(5))
-        error_char = random.randint(low=97, high=123, size=(5))
-        for i in range(5):
-            #item['bad_text'][i_batch][error_index[i]] = chr(error_char[i])
-            #'bad_text' is not updated with typos
-            if chr(error_char[i]) != item['ok_text'][i_batch][error_index[i]]:
-                item['label'][i_batch][error_index[i]] = 0
-                item['bad_sample_one_hot'][i_batch][error_index[i]] = torch.zeros(162)#training_data.channels
-                item['bad_sample_one_hot'][i_batch][error_index[i]][training_data.charlist.index(chr(error_char[i]))] = 1
-                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
-    return item
-        
 
-        
+def add_typos(item):
+    error_index = random.randint(50, size=(5*50))
+    error_char = random.randint(low=97, high=123, size=(5*50))
+    extra_char_one_hot = torch.zeros(1, 162)
+    extra_char_one_hot[0][training_data.charlist.index('#')] = 1
+    for i in range(5*50):
+        #bad_sample and ok_sample is not updated
+        if (i%5)>1:
+            #swap char for another char
+            bad_text = list(item['bad_text'][i//5])
+            bad_text[error_index[i]] = chr(error_char[i])
+            item['bad_text'][i//5] = ''.join(bad_text)
+            if chr(error_char[i]) != item['ok_text'][i//5][error_index[i]]:
+                item['label'][i//5][error_index[i]] = 0
+                item['bad_sample_one_hot'][i//5][error_index[i]] = torch.zeros(162)#training_data.channels
+                item['bad_sample_one_hot'][i//5][error_index[i]][training_data.charlist.index(chr(error_char[i]))] = 1
+                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+        else:
+            #insert extra char
+            base_one_hot = torch.zeros(1, 162)
+            base_one_hot[0][training_data.charlist.index(chr(error_char[i]))] = 1
+            bad_text = list(item['bad_text'][i//5])
+            ok_text = list(item['ok_text'][i//5])
+            label = list(item['label'][i//5])
+            
+            bad_text.insert(error_index[i], chr(error_char[i]))
+            ok_text.insert(error_index[i], '#')
+            item['bad_sample_one_hot'][i//5] = torch.cat((item['bad_sample_one_hot'][i//5][:error_index[i]], base_one_hot, item['bad_sample_one_hot'][i//5][error_index[i]:-1]), 0)
+            item['ok_sample_one_hot'][i//5] = torch.cat((item['ok_sample_one_hot'][i//5][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//5][error_index[i]:-1]), 0)
+            
+            bad_text.pop(len(bad_text)-1)
+            ok_text.pop(len(ok_text)-1)
+
+            item['bad_text'][i//5] = ''.join(bad_text)
+            item['ok_text'][i//5] = ''.join(ok_text)
+            label.insert(error_index[i], 0)
+            label.pop(len(label)-1)
+            item['label'][i//5] = torch.tensor(label)
+
+    return item
 
 def train():
     #n_total_steps = len(training_data_loader)
     for epoch in range(epochs):
         for i, item in enumerate(training_data_loader):
-            item = typos(item)
+            #item = add_typos(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -103,10 +130,13 @@ def train():
             #wandb.log({"loss": loss})
             # Optional
             #wandb.watch(model)
-            print('Train data test:')
-            test(testing_train_data_loader)
-            #print('\033[0;34mTest data test:\033[0;37m')
-            #test(testing_test_data_loader)
+            #print('Train data test:')
+            #test(testing_train_data_loader)
+            if (epoch+1)%2 == 0:
+              print('Train data test:')
+              test(testing_train_data_loader)
+              print('\033[0;34mTest data test:\033[0;37m')
+              test(testing_test_data_loader)
 
 def test(data_loader):
     TP, FP, TN, FN, TPR, PPV, F1, ACC_CM, TNR, BA = 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
@@ -119,7 +149,7 @@ def test(data_loader):
         outputs = model(item['bad_sample_one_hot'])
         outputs = outputs[0]
         item['label'] = item['label'][0]
-        outputs = [1 if out>0.5 else 0 for out in outputs]
+        outputs = [1 if out>0.7 else 0 for out in outputs]
         for index, out in enumerate(outputs):
             if item['label'][index] == 1 and out>0.5: TP +=1
             if item['label'][index] == 1 and out<=0.5: FN +=1
@@ -129,7 +159,7 @@ def test(data_loader):
     confusion_matrix[0][1] = FN
     confusion_matrix[1][0] = FP
     confusion_matrix[1][1] = TN
-    print(confusion_matrix)
+    print(confusion_matrix.numpy())
     TPR = TP/(TP+FN) #sensitivity, recall, hit rate, or true positive rate (TPR)
     TNR = TN/(TN+FP) #specificity, selectivity or true negative rate (TNR)
     PPV = TP/(TP+FP) #precision or positive predictive value (PPV)
@@ -141,5 +171,6 @@ def test(data_loader):
     print(f'Accuracy: {ACC_CM*100:.2f}%')
     print(f'Balanced accuracy: {BA*100:.2f}%')
     print(f'Recall: {TPR:.4f}, TNR: {TNR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
+
 
 train()

@@ -35,7 +35,7 @@ def process_corpus(file:str):
 
 def insert_chars(file:str, prob:float):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_with_extra.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'-insert.txt', "w", encoding="UTF-8")
     lines = f.readlines()
     IDs = lines[0::3]
     clear = lines[1::3]
@@ -58,7 +58,7 @@ def insert_chars(file:str, prob:float):
 
 def add_typos(file:str, prob:float):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_with_typos.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'-swap.txt', "w", encoding="UTF-8")
     position = 0
     lines = f.readlines()
     IDs = lines[0::3]
@@ -80,7 +80,8 @@ def add_typos(file:str, prob:float):
 #process_corpus('one-hot_encoding/data/corpus_test.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
-insert_chars('one-hot_encoding/data/wiki-1k-train-debug-insert.txt', 0.025)
+insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
+add_typos('one-hot_encoding/data/wiki-1k-test-insert.txt', 0.05)
 
 
 
