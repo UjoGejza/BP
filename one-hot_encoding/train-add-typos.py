@@ -61,10 +61,10 @@ def new_add_typos(item):
     extra_char_one_hot = torch.zeros(1, 162)
     extra_char_one_hot[0][training_data.charlist.index('#')] = 1
     for i in range(5*50):
-        #bad_sample and ok_sample is not updated
         if (i%5)>1:
             #swap char for another char
             bad_text = list(item['bad_text'][i//5])
+            item['bad_sample'][i//5][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
             bad_text[error_index[i]] = chr(error_char[i])
             item['bad_text'][i//5] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//5][error_index[i]]:
@@ -79,20 +79,28 @@ def new_add_typos(item):
             bad_text = list(item['bad_text'][i//5])
             ok_text = list(item['ok_text'][i//5])
             label = list(item['label'][i//5])
+            ok_sample = list(item['ok_sample'][i//5])
+            bad_sample = list(item['bad_sample'][i//5])
             
             bad_text.insert(error_index[i], chr(error_char[i]))
             ok_text.insert(error_index[i], '#')
+            label.insert(error_index[i], 0)
+            ok_sample.insert(error_index[i], training_data.charlist.index('#'))
+            bad_sample.insert(error_index[i], training_data.charlist.index(chr(error_char[i])))
             item['bad_sample_one_hot'][i//5] = torch.cat((item['bad_sample_one_hot'][i//5][:error_index[i]], base_one_hot, item['bad_sample_one_hot'][i//5][error_index[i]:-1]), 0)
             item['ok_sample_one_hot'][i//5] = torch.cat((item['ok_sample_one_hot'][i//5][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//5][error_index[i]:-1]), 0)
             
             bad_text.pop(len(bad_text)-1)
             ok_text.pop(len(ok_text)-1)
+            label.pop(len(label)-1)
+            ok_sample.pop(len(ok_sample)-1)
+            bad_sample.pop(len(bad_sample)-1)
 
             item['bad_text'][i//5] = ''.join(bad_text)
             item['ok_text'][i//5] = ''.join(ok_text)
-            label.insert(error_index[i], 0)
-            label.pop(len(label)-1)
             item['label'][i//5] = torch.tensor(label)
+            item['ok_sample'][i//5] = torch.tensor(ok_sample)
+            item['bad_sample'][i//5] = torch.tensor(bad_sample)
 
     return item
 
@@ -102,10 +110,12 @@ def train():
         for i, item in enumerate(training_data_loader):
             item = new_add_typos(item)
             #item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
-            print(item['id'][0])
-            print(item['ok_text'][0])
-            print(item['bad_text'][0])
-            print(item['label'][0])
+            print(item['id'][49])
+            print(item['ok_text'][49])
+            print(item['bad_text'][49])
+            print(item['label'][49])
+            print(item['ok_sample'][49])
+            print(item['bad_sample'][49])
             
 
 train()

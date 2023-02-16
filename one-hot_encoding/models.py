@@ -98,3 +98,31 @@ class NeuralNetworkOneHotConv2(nn.Module):
         out = self.sigmoid(out)
         
         return out
+
+class NeuralNetworkCorrection1(nn.Module):
+    def __init__(self):
+        super(NeuralNetworkOneHotConv2, self).__init__()
+        self.conv1 = nn.Conv1d(162, 90, 3)
+        self.relu = nn.LeakyReLU()
+        self.conv2 = nn.Conv1d(90, 60, 3)
+        self.conv3 = nn.Conv1d(60, 30, 3)
+        self.conv4 = nn.Conv1d(30, 60, 3)
+        self.conv5 = nn.Conv1d(60, 90, 3)
+        self.conv6 = nn.Conv1d(90, 162, 3)
+        self.sigmoid = nn.Sigmoid()
+        
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out = self.relu(out)
+        out = self.conv3(out)
+        out = self.relu(out)
+        out = self.conv4(out)
+        out = self.relu(out)
+        out = self.conv5(out)
+        out = self.relu(out)
+        out = self.conv6(out)
+        out = self.sigmoid(out)
+        
+        return out
