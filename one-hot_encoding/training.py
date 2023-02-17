@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from numpy import random
 
 from dataset import MyDataset
-from models import NeuralNetworkOneHot, NeuralNetwork, NeuralNetworkOneHotConv2
+from models import Conv2Recurrent
 import ansi_print
 
 #import wandb
@@ -45,7 +45,7 @@ alphabet = training_data.charlist
 #    print(x['bad_sample_one_hot'].shape)
 #    break
 
-model = NeuralNetworkOneHotConv2()
+model = Conv2Recurrent()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
@@ -124,7 +124,7 @@ def train():
     #n_total_steps = len(training_data_loader)
     for epoch in range(epochs):
         for i, item in enumerate(training_data_loader):
-            #item = add_typos(item)
+            item = add_typos(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -161,10 +161,10 @@ def test(data_loader):
         item['label'] = item['label'][0]
         outputs = [1 if out>0.7 else 0 for out in outputs]
         for index, out in enumerate(outputs):
-            if item['label'][index] == 1 and out>0.5: TP +=1
-            if item['label'][index] == 1 and out<=0.5: FN +=1
-            if item['label'][index] == 0 and out>0.5: FP +=1
-            if item['label'][index] == 0 and out<=0.5: TN +=1
+            if item['label'][index] == 1 and out == 1: TP +=1
+            if item['label'][index] == 1 and out == 0: FN +=1
+            if item['label'][index] == 0 and out == 1: FP +=1
+            if item['label'][index] == 0 and out == 0: TN +=1
     confusion_matrix[0][0] = TP
     confusion_matrix[0][1] = FN
     confusion_matrix[1][0] = FP
