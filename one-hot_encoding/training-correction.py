@@ -77,7 +77,7 @@ def add_typos(item):
     #extra_char_one_hot = torch.zeros(1, 69)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*50):
-        if (i%4)>0:
+        if (i%4)<3:
             #swap char for another char
             bad_text = list(item['bad_text'][i//4])
             #item['bad_sample'][i//4][error_index[i]] = alphabet.index(chr(error_char[i]))
@@ -93,13 +93,13 @@ def add_typos(item):
             base_one_hot = torch.zeros(1, 69)
             base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//4])
-            #ok_text = list(item['ok_text'][i//4])
+            ok_text = list(item['ok_text'][i//4])
             #label = list(item['label'][i//4])
             ok_sample = list(item['ok_sample'][i//4])
             #bad_sample = list(item['bad_sample'][i//4])
             
             bad_text.insert(error_index[i], chr(error_char[i]))
-            #ok_text.insert(error_index[i], '#')
+            ok_text.insert(error_index[i], '#')
             #label.insert(error_index[i], 0)
             ok_sample.insert(error_index[i], alphabet.index('#'))
             #bad_sample.insert(error_index[i], alphabet.index(chr(error_char[i])))
@@ -107,13 +107,13 @@ def add_typos(item):
             #item['ok_sample_one_hot'][i//4] = torch.cat((item['ok_sample_one_hot'][i//4][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//4][error_index[i]:-1]), 0)
             
             bad_text.pop(len(bad_text)-1)
-            #ok_text.pop(len(ok_text)-1)
+            ok_text.pop(len(ok_text)-1)
             #label.pop(len(label)-1)
             ok_sample.pop(len(ok_sample)-1)
             #bad_sample.pop(len(bad_sample)-1)
 
             item['bad_text'][i//4] = ''.join(bad_text)
-            #item['ok_text'][i//4] = ''.join(ok_text)
+            item['ok_text'][i//4] = ''.join(ok_text)
             #item['label'][i//4] = torch.tensor(label)
             item['ok_sample'][i//4] = torch.tensor(ok_sample)
             #item['bad_sample'][i//4] = torch.tensor(bad_sample)

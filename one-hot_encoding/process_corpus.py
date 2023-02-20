@@ -1,4 +1,5 @@
 import torch
+from numpy import random
 
 #from txt data creates structured data in format:
 #ID<index> 
@@ -77,11 +78,41 @@ def add_typos(file:str, prob:float):
     f.close()
     o.close()
 
+def new_add_typos_and_insert_chars(file:str):
+    f = open(file, "r", encoding="UTF-8")
+    o = open(file[:-4]+'-new-typos.txt', "w", encoding="UTF-8")
+    lines = f.readlines()
+    IDs = lines[0::3]
+    clear = lines[1::3]
+    dirty = lines[2::3]
+    for idx, id in enumerate(IDs):
+        o.write(id)
+        clear[idx] = list(clear[idx])
+        dirty[idx] = list(dirty[idx])
+        
+        error_index = random.randint(50, size=(4))
+        error_char = random.randint(low=97, high=123, size=(4))
+
+        for i in range(4):
+            if i%4<3:
+                dirty[idx][error_index[i]] = chr(error_char[i])
+            else:
+                dirty[idx].insert(error_index[i], chr(error_char[i]))
+                clear[idx].insert(error_index[i], '#')
+                clear[idx].pop(len(clear[idx])-2)
+                dirty[idx].pop(len(dirty[idx])-2)
+        o.write(''.join(clear[idx]))
+        o.write(''.join(dirty[idx]))
+    f.close()
+    o.close()
+
 #process_corpus('one-hot_encoding/data/corpus_test.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
-insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
-add_typos('one-hot_encoding/data/wiki-1k-test-insert.txt', 0.05)
+#insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
+#add_typos('one-hot_encoding/data/wiki-1k-test-insert.txt', 0.05)
+new_add_typos_and_insert_chars('one-hot_encoding/data/wiki-1k-test.txt')
+new_add_typos_and_insert_chars('one-hot_encoding/data/wiki-1k-train.txt')
 
 
 
