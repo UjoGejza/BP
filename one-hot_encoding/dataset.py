@@ -7,11 +7,7 @@ class MyDataset(Dataset):
     def __init__(self, file:str):
         self.charlist = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
          'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 
-         'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '¡', '?', '¿', ',', '—', '…', '”', '“',
-         '.', '·', ':', ';', '\\', '_', '&', '#', '@', '(', ')', '[', ']', '{', '}', '+', '-', '*', '/', '±', '=', '≠', '<', '>', '≤', 
-         '≥', 'ϵ', '∞', '%', '‰', '£', '€', '$', '§', '©', '®', '℥', "'", '‘', '’', '`', '„', '“', '"', '»', '«', '›', '‹', '☞', '☜', 
-         '^', '~', '°', '˛', '†', '|', '⁂', '⊥', '¬', '¤', 'Á', 'Č', 'Ď', 'É', 'Ě', 'Í', 'Ň', 'Ó', 'Ř', 'Š', 'Ť', 'Ú', 'Ů', 'Ý', 'Ž',
-        'á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž']
+         'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '%','.', '#']
 
 
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
@@ -41,18 +37,25 @@ class MyDataset(Dataset):
             self.bad_text[index] = self.bad_text[index][:-1]#ignore '\n'
             
             sample = []
+            sample_txt = []
             for i,character in enumerate(self.ok_text[index]):
                 if (character not in self.charlist): character = ' '
+                sample_txt.append(character)
                 sample.append(self.charlist.index(character))
                 self.ok_samples_one_hot[index][i][self.charlist.index(character)] = 1
             self.ok_samples[index] = torch.tensor(sample)
+            self.ok_text[index] = ''.join(sample_txt)
+
             
-            sample = []            
+            sample = [] 
+            sample_txt = []           
             for i,character in enumerate(self.bad_text[index]):
                 if (character not in self.charlist): character = ' '
+                sample_txt.append(character)
                 sample.append(self.charlist.index(character))
                 self.bad_samples_one_hot[index][i][self.charlist.index(character)] = 1
             self.bad_samples[index] = torch.tensor(sample)
+            self.bad_text[index] = ''.join(sample_txt)
 
             self.labels[index] = torch.tensor([1 if ok == bad else 0 for ok, bad in zip(self.ok_samples[index], self.bad_samples[index])])
 
@@ -60,7 +63,7 @@ class MyDataset(Dataset):
     def __len__(self):
         return len(self.ok_samples)
 
-
+ 
     def __getitem__(self, idx):
         #maybe move convert to one-hot here, idk
         return {'id': self.IDs[idx],

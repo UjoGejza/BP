@@ -16,11 +16,13 @@ print(f'USING: {device}')
 
 
 batch_size = 50
-epochs = 1
+epochs = 5
 learning_rate = 0.001
 
-training_data = MyDataset('one-hot_encoding/data/wiki-1k-test.txt')
+training_data = MyDataset('one-hot_encoding/data/wiki-20k.txt')
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
+
+alphabet = training_data.charlist
 
 
 def typos(item):#old very slow
@@ -32,9 +34,9 @@ def typos(item):#old very slow
                     character = chr(int((torch.rand(1).item()*26)) + 97)
                     if character != item['ok_text'][i_batch][i_sample]: 
                         item['label'][i_batch][i_sample] = 0
-                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(162)#training_data.channels
-                        item['bad_sample_one_hot'][i_batch][i_sample][training_data.charlist.index(character)] = 1
-                        item['bad_sample'][i_batch][i_sample] = training_data.charlist.index(character)
+                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(69)#training_data.channels
+                        item['bad_sample_one_hot'][i_batch][i_sample][alphabet.index(character)] = 1
+                        item['bad_sample'][i_batch][i_sample] = alphabet.index(character)
             bad_sample.append(character)
         item['bad_text'][i_batch] = ''.join(bad_sample)
     return item
@@ -49,33 +51,33 @@ def add_typos(item):
             #'bad_text' is not updated with typos
             if chr(error_char[i]) != item['ok_text'][i_batch][error_index[i]]:
                 item['label'][i_batch][error_index[i]] = 0
-                item['bad_sample_one_hot'][i_batch][error_index[i]] = torch.zeros(162)#training_data.channels
-                item['bad_sample_one_hot'][i_batch][error_index[i]][training_data.charlist.index(chr(error_char[i]))] = 1
-                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+                item['bad_sample_one_hot'][i_batch][error_index[i]] = torch.zeros(69)#training_data.channels
+                item['bad_sample_one_hot'][i_batch][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
+                #item['bad_sample'][i_batch][error_index[i]] = alphabet.index(chr(error_char[i]))
     return item
 
 
 def new_add_typos(item):
     error_index = random.randint(50, size=(5*50))
     error_char = random.randint(low=97, high=123, size=(5*50))
-    extra_char_one_hot = torch.zeros(1, 162)
-    extra_char_one_hot[0][training_data.charlist.index('#')] = 1
+    extra_char_one_hot = torch.zeros(1, 69)
+    extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(5*50):
         if (i%5)>1:
             #swap char for another char
             bad_text = list(item['bad_text'][i//5])
-            item['bad_sample'][i//5][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+            item['bad_sample'][i//5][error_index[i]] = alphabet.index(chr(error_char[i]))
             bad_text[error_index[i]] = chr(error_char[i])
             item['bad_text'][i//5] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//5][error_index[i]]:
                 item['label'][i//5][error_index[i]] = 0
-                item['bad_sample_one_hot'][i//5][error_index[i]] = torch.zeros(162)#training_data.channels
-                item['bad_sample_one_hot'][i//5][error_index[i]][training_data.charlist.index(chr(error_char[i]))] = 1
-                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+                item['bad_sample_one_hot'][i//5][error_index[i]] = torch.zeros(69)#training_data.channels
+                item['bad_sample_one_hot'][i//5][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
+                #item['bad_sample'][i_batch][error_index[i]] = alphabet.index(chr(error_char[i]))
         else:
             #insert extra char
-            base_one_hot = torch.zeros(1, 162)
-            base_one_hot[0][training_data.charlist.index(chr(error_char[i]))] = 1
+            base_one_hot = torch.zeros(1, 69)
+            base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//5])
             ok_text = list(item['ok_text'][i//5])
             label = list(item['label'][i//5])
@@ -85,8 +87,8 @@ def new_add_typos(item):
             bad_text.insert(error_index[i], chr(error_char[i]))
             ok_text.insert(error_index[i], '#')
             label.insert(error_index[i], 0)
-            ok_sample.insert(error_index[i], training_data.charlist.index('#'))
-            bad_sample.insert(error_index[i], training_data.charlist.index(chr(error_char[i])))
+            ok_sample.insert(error_index[i], alphabet.index('#'))
+            bad_sample.insert(error_index[i], alphabet.index(chr(error_char[i])))
             item['bad_sample_one_hot'][i//5] = torch.cat((item['bad_sample_one_hot'][i//5][:error_index[i]], base_one_hot, item['bad_sample_one_hot'][i//5][error_index[i]:-1]), 0)
             item['ok_sample_one_hot'][i//5] = torch.cat((item['ok_sample_one_hot'][i//5][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//5][error_index[i]:-1]), 0)
             
@@ -107,15 +109,16 @@ def new_add_typos(item):
 def train():
     #n_total_steps = len(training_data_loader)
     for epoch in range(epochs):
+        print(epoch)
         for i, item in enumerate(training_data_loader):
             item = new_add_typos(item)
             #item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
-            print(item['id'][49])
-            print(item['ok_text'][49])
-            print(item['bad_text'][49])
-            print(item['label'][49])
-            print(item['ok_sample'][49])
-            print(item['bad_sample'][49])
+            #print(item['id'][49])
+            #print(item['ok_text'][49])
+            #print(item['bad_text'][49])
+            #print(item['label'][49])
+            #print(item['ok_sample'][49])
+            #print(item['bad_sample'][49])
             
 
 train()

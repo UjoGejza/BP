@@ -155,18 +155,18 @@ class Conv2Recurrent(nn.Module):
 class Conv2RecurrentCorrection(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv = [nn.Conv1d(162, 90, 3),
+        self.conv = [nn.Conv1d(69, 128, 3, padding=1),
                     nn.LeakyReLU(),
-                    nn.Conv1d(90, 60, 3),
+                    nn.Conv1d(128, 256, 3, padding=1),
                     nn.LeakyReLU(),
-                    nn.Conv1d(60, 30, 3),
+                    nn.Conv1d(256, 512, 5, padding=2),
                     nn.LeakyReLU()]
         self.conv = nn.Sequential(*self.conv)
-        self.rec = nn.LSTM(30, 30, 2)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
         self.lin = [nn.Flatten(),
-                    nn.Linear(30*44, 512),
+                    nn.Linear(512*50, 4096),
                     nn.LeakyReLU(),
-                    nn.Linear(512, 256),
+                    nn.Linear(4096, 256),
                     nn.LeakyReLU(),
                     nn.Linear(256, 50)]
         self.lin = nn.Sequential(*self.lin)
@@ -177,6 +177,112 @@ class Conv2RecurrentCorrection(nn.Module):
         x,_ = self.rec(x)
         x = x.permute(1, 2, 0)
         return self.lin(x)
+
+class Conv2BiggerKernelRecurrentCorrection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.LeakyReLU()]
+        self.conv = nn.Sequential(*self.conv)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.lin = [nn.Flatten(),
+                    nn.Linear(512*50, 4096),
+                    nn.LeakyReLU(),
+                    nn.Linear(4096, 256),
+                    nn.LeakyReLU(),
+                    nn.Linear(256, 50)]
+        self.lin = nn.Sequential(*self.lin)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.lin(x)
+
+class Conv2BiggerKernelAggRecurrentCorrection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv = nn.Sequential(*self.conv)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.agg = [nn.Conv1d(512, 50, 5, padding=2),
+                    nn.BatchNorm1d(50),
+                    nn.LeakyReLU()]
+        self.agg = nn.Sequential(*self.agg)
+        self.lin = [nn.Flatten(),
+                    nn.Linear(50*50, 2048),
+                    nn.LeakyReLU(),
+                    nn.Linear(2048, 256),
+                    nn.LeakyReLU(),
+                    nn.Linear(256, 50)]
+        self.lin = nn.Sequential(*self.lin)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        x = self.agg(x)
+        return self.lin(x)
+
+class LSTMRecurrentCorrection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.rec = nn.LSTM(69, 256, 2, bidirectional=True)
+        self.lin = [nn.Flatten(),
+                    nn.Linear(512*50, 4096),
+                    nn.LeakyReLU(),
+                    nn.Linear(4096, 256),
+                    nn.LeakyReLU(),
+                    nn.Linear(256, 50)]
+        self.lin = nn.Sequential(*self.lin)
+
+    def forward(self, x):
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.lin(x)
+
+class Conv2RecurrentDetection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = [nn.Conv1d(69, 128, 3, padding=1),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 3, padding=1),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 5, padding=2),
+                    nn.LeakyReLU()]
+        self.conv = nn.Sequential(*self.conv)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.lin = [nn.Flatten(),
+                    nn.Linear(512*50, 4096),
+                    nn.LeakyReLU(),
+                    nn.Linear(4096, 256),
+                    nn.LeakyReLU(),
+                    nn.Linear(256, 50),
+                    nn.Sigmoid()]
+        self.lin = nn.Sequential(*self.lin)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.lin(x)
+
 
 
 class NeuralNetworkCorrection2(nn.Module):

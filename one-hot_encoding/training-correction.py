@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from numpy import random
 
 from dataset import MyDataset
-from models import Conv2RecurrentCorrection
+from models import Conv2BiggerKernelAggRecurrentCorrection
 import ansi_print
 
 #import wandb
@@ -26,7 +26,7 @@ print(f'USING: {device}')
 #learning_rate = wandb.config['learning_rate']
 
 batch_size = 50
-epochs = 200
+epochs = 2000
 learning_rate = 0.001
 
 training_data = MyDataset('one-hot_encoding/data/wiki-20k.txt')
@@ -45,7 +45,7 @@ alphabet = training_data.charlist
 #    print(x['bad_sample_one_hot'].shape)
 #    break
 
-model = Conv2RecurrentCorrection()
+model = Conv2BiggerKernelAggRecurrentCorrection()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.MSELoss()
@@ -74,49 +74,49 @@ def typos(item):#old very slow
 def add_typos(item):
     error_index = random.randint(50, size=(4*50))
     error_char = random.randint(low=97, high=123, size=(4*50))
-    extra_char_one_hot = torch.zeros(1, 162)
-    extra_char_one_hot[0][alphabet.index('#')] = 1
+    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*50):
         if (i%4)>0:
             #swap char for another char
             bad_text = list(item['bad_text'][i//4])
-            item['bad_sample'][i//4][error_index[i]] = alphabet.index(chr(error_char[i]))
+            #item['bad_sample'][i//4][error_index[i]] = alphabet.index(chr(error_char[i]))
             bad_text[error_index[i]] = chr(error_char[i])
             item['bad_text'][i//4] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//4][error_index[i]]:
-                item['label'][i//4][error_index[i]] = 0
-                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(162)#training_data.channels
+                #item['label'][i//4][error_index[i]] = 0
+                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(69)#training_data.channels
                 item['bad_sample_one_hot'][i//4][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
                 #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
         else:
             #insert extra char
-            base_one_hot = torch.zeros(1, 162)
+            base_one_hot = torch.zeros(1, 69)
             base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//4])
-            ok_text = list(item['ok_text'][i//4])
-            label = list(item['label'][i//4])
+            #ok_text = list(item['ok_text'][i//4])
+            #label = list(item['label'][i//4])
             ok_sample = list(item['ok_sample'][i//4])
-            bad_sample = list(item['bad_sample'][i//4])
+            #bad_sample = list(item['bad_sample'][i//4])
             
             bad_text.insert(error_index[i], chr(error_char[i]))
-            ok_text.insert(error_index[i], '#')
-            label.insert(error_index[i], 0)
+            #ok_text.insert(error_index[i], '#')
+            #label.insert(error_index[i], 0)
             ok_sample.insert(error_index[i], alphabet.index('#'))
-            bad_sample.insert(error_index[i], alphabet.index(chr(error_char[i])))
+            #bad_sample.insert(error_index[i], alphabet.index(chr(error_char[i])))
             item['bad_sample_one_hot'][i//4] = torch.cat((item['bad_sample_one_hot'][i//4][:error_index[i]], base_one_hot, item['bad_sample_one_hot'][i//4][error_index[i]:-1]), 0)
-            item['ok_sample_one_hot'][i//4] = torch.cat((item['ok_sample_one_hot'][i//4][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//4][error_index[i]:-1]), 0)
+            #item['ok_sample_one_hot'][i//4] = torch.cat((item['ok_sample_one_hot'][i//4][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//4][error_index[i]:-1]), 0)
             
             bad_text.pop(len(bad_text)-1)
-            ok_text.pop(len(ok_text)-1)
-            label.pop(len(label)-1)
+            #ok_text.pop(len(ok_text)-1)
+            #label.pop(len(label)-1)
             ok_sample.pop(len(ok_sample)-1)
-            bad_sample.pop(len(bad_sample)-1)
+            #bad_sample.pop(len(bad_sample)-1)
 
             item['bad_text'][i//4] = ''.join(bad_text)
-            item['ok_text'][i//4] = ''.join(ok_text)
-            item['label'][i//4] = torch.tensor(label)
+            #item['ok_text'][i//4] = ''.join(ok_text)
+            #item['label'][i//4] = torch.tensor(label)
             item['ok_sample'][i//4] = torch.tensor(ok_sample)
-            item['bad_sample'][i//4] = torch.tensor(bad_sample)
+            #item['bad_sample'][i//4] = torch.tensor(bad_sample)
 
     return item
 
@@ -124,7 +124,7 @@ def train():
     #n_total_steps = len(training_data_loader)
     for epoch in range(epochs):
         for i, item in enumerate(training_data_loader):
-            #item = add_typos(item)
+            item = add_typos(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -142,7 +142,7 @@ def train():
             #wandb.watch(model)
             #print('Train data test:')
             #test(testing_train_data_loader)
-            if (epoch+1)%2 == 0:
+            if (epoch+1)%10 == 0 and loss.item() < 10:
               print('Train data test:')
               test(testing_train_data_loader)
               print('\033[0;34mTest data test:\033[0;37m')
@@ -153,7 +153,7 @@ def test(data_loader):
     #confusion_matrix = torch.rand(2,2)
     correct = 0
     all= 0
-    for item in data_loader:
+    for i, item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
         item['ok_sample'] = item['ok_sample'].to(device)
@@ -165,18 +165,21 @@ def test(data_loader):
         output_text_list = list(outputs)
         for index, out in enumerate(outputs):
             if item['ok_sample'][index] == out: correct+=1
-            output_text_list[index] = alphabet[out.int()]
+            if i>data_loader.__len__()-6:
+                out = min(68, out.int())
+                output_text_list[index] = alphabet[out]
             all +=1
+        if i>data_loader.__len__()-6:
+            output_text = ''.join(output_text_list)
+            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
+            ansi_print.a_print(output_text, item['ok_text'][0], 'red')
     #TPR = TP/(TP+FN) #sensitivity, recall, hit rate, or true positive rate (TPR)
     #TNR = TN/(TN+FP) #specificity, selectivity or true negative rate (TNR)
     #PPV = TP/(TP+FP) #precision or positive predictive value (PPV)
     #F1 = 2 * (PPV * TPR)/(PPV + TPR) #F1 score is the harmonic mean of precision and sensitivity:
     #ACC_CM = (TP + TN)/(TP + TN + FP + FN) #accuracy
     #BA = (TPR + TNR)/2 #balanced accuracy
-    output_text = ''.join(output_text_list)
     acc = correct/all
-    ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
-    ansi_print.a_print(output_text, item['ok_text'][0], 'red')
     print(f'Accuracy: {acc*100:.2f}%')
     #print(f'Balanced accuracy: {BA*100:.2f}%')
     #print(f'Recall: {TPR:.4f}, TNR: {TNR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')

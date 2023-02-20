@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from numpy import random
 
 from dataset import MyDataset
-from models import Conv2Recurrent
+from models import Conv2RecurrentDetection
 import ansi_print
 
 #import wandb
@@ -45,7 +45,7 @@ alphabet = training_data.charlist
 #    print(x['bad_sample_one_hot'].shape)
 #    break
 
-model = Conv2Recurrent()
+model = Conv2RecurrentDetection()
 model.to(device)
 #nn.BCEWithLogitsLoss
 loss_fn = nn.BCELoss()
@@ -63,7 +63,7 @@ def typos(item):#old very slow
                     character = chr(int((torch.rand(1).item()*26)) + 97)
                     if character != item['ok_text'][i_batch][i_sample]: 
                         item['label'][i_batch][i_sample] = 0
-                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(162)#training_data.channels
+                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(69)#training_data.channels
                         item['bad_sample_one_hot'][i_batch][i_sample][alphabet.index(character)] = 1
                         item['bad_sample'][i_batch][i_sample] = alphabet.index(character)
             bad_sample.append(character)
@@ -74,7 +74,7 @@ def typos(item):#old very slow
 def add_typos(item):
     error_index = random.randint(50, size=(4*50))
     error_char = random.randint(low=97, high=123, size=(4*50))
-    extra_char_one_hot = torch.zeros(1, 162)
+    extra_char_one_hot = torch.zeros(1, 69)
     extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*50):
         if (i%4)>0:
@@ -85,12 +85,12 @@ def add_typos(item):
             item['bad_text'][i//4] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//4][error_index[i]]:
                 item['label'][i//4][error_index[i]] = 0
-                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(162)#training_data.channels
+                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(69)#training_data.channels
                 item['bad_sample_one_hot'][i//4][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
                 #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
         else:
             #insert extra char
-            base_one_hot = torch.zeros(1, 162)
+            base_one_hot = torch.zeros(1, 69)
             base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//4])
             ok_text = list(item['ok_text'][i//4])
@@ -142,7 +142,7 @@ def train():
             #wandb.watch(model)
             #print('Train data test:')
             #test(testing_train_data_loader)
-            if (epoch+1)%2 == 0:
+            if (epoch+1)%20 == 0:
               print('Train data test:')
               test(testing_train_data_loader)
               print('\033[0;34mTest data test:\033[0;37m')
@@ -151,7 +151,7 @@ def train():
 def test(data_loader):
     TP, FP, TN, FN, TPR, PPV, F1, ACC_CM, TNR, BA = 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     confusion_matrix = torch.rand(2,2)
-    for item in data_loader:
+    for i,item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
         item['label'] = item['label'].to(device)
@@ -159,12 +159,15 @@ def test(data_loader):
         outputs = model(item['bad_sample_one_hot'])
         outputs = outputs[0]
         item['label'] = item['label'][0]
-        outputs = [1 if out>0.7 else 0 for out in outputs]
+        outputs = [1 if out>0.6 else 0 for out in outputs]
         for index, out in enumerate(outputs):
             if item['label'][index] == 1 and out == 1: TP +=1
             if item['label'][index] == 1 and out == 0: FN +=1
             if item['label'][index] == 0 and out == 1: FP +=1
             if item['label'][index] == 0 and out == 0: TN +=1
+        if i>data_loader.__len__()-6:
+            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
+            ansi_print.a_print(outputs, item['label'], 'red')
     confusion_matrix[0][0] = TP
     confusion_matrix[0][1] = FN
     confusion_matrix[1][0] = FP
@@ -176,8 +179,6 @@ def test(data_loader):
     F1 = 2 * (PPV * TPR)/(PPV + TPR) #F1 score is the harmonic mean of precision and sensitivity:
     ACC_CM = (TP + TN)/(TP + TN + FP + FN) #accuracy
     BA = (TPR + TNR)/2 #balanced accuracy
-    ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
-    ansi_print.a_print(outputs, item['label'], 'red')
     print(f'Accuracy: {ACC_CM*100:.2f}%')
     print(f'Balanced accuracy: {BA*100:.2f}%')
     print(f'Recall: {TPR:.4f}, TNR: {TNR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
