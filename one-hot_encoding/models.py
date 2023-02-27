@@ -222,12 +222,117 @@ class Conv2BiggerKernelAggRecurrentCorrection(nn.Module):
                     nn.BatchNorm1d(50),
                     nn.LeakyReLU()]
         self.agg = nn.Sequential(*self.agg)
-        self.lin = [nn.Flatten(),
+        self.lin = [nn.Flatten(),#prec linerne vrstvy, nahradit konvoluciami
                     nn.Linear(50*50, 2048),
                     nn.LeakyReLU(),
                     nn.Linear(2048, 256),
                     nn.LeakyReLU(),
                     nn.Linear(256, 50)]
+        self.lin = nn.Sequential(*self.lin)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        x = self.agg(x)
+        return self.lin(x)
+    
+class ConvLSTMCorrection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.conv2 = [nn.Conv1d(512, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 69, 5, padding=2),
+                    nn.BatchNorm1d(69),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
+class ConvLSTMDetection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.conv2 = [nn.Conv1d(512, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 64, 9, padding=4),
+                    nn.BatchNorm1d(64),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(64, 32, 5, padding=2),
+                    nn.BatchNorm1d(32),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(32, 1, 5, padding=2),
+                    nn.BatchNorm1d(1),
+                    nn.Sigmoid()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+
+class Conv2BiggerKernelAggRecurrentDetection(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv = nn.Sequential(*self.conv)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.agg = [nn.Conv1d(512, 50, 5, padding=2),
+                    nn.BatchNorm1d(50),
+                    nn.LeakyReLU()]
+        self.agg = nn.Sequential(*self.agg)
+        self.lin = [nn.Flatten(),
+                    nn.Linear(50*50, 2048),
+                    nn.LeakyReLU(),
+                    nn.Linear(2048, 256),
+                    nn.LeakyReLU(),
+                    nn.Linear(256, 50),
+                    nn.Sigmoid()]
         self.lin = nn.Sequential(*self.lin)
 
     def forward(self, x):

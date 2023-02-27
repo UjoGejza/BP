@@ -6,30 +6,17 @@ from torch.utils.data import DataLoader
 from numpy import random
 
 from dataset import MyDataset
-from models import Conv2BiggerKernelAggRecurrentCorrection
+from models import ConvLSTMCorrection
 import ansi_print
-
-#import wandb
-
-#wandb.init(project="my-test-project-BP")
-
-#wandb.config = {
-#  "learning_rate": 0.0006,
-#  "epochs": 150,
-#  "batch_size": 30
-#}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'USING: {device}')
-#batch_size = wandb.config['batch_size']
-#epochs = wandb.config['epochs']
-#learning_rate = wandb.config['learning_rate']
 
 batch_size = 50
-epochs = 2000
+max_iterations = 40_000
 learning_rate = 0.001
 
-training_data = MyDataset('one-hot_encoding/data/wiki-20k.txt')
+training_data = MyDataset('one-hot_encoding/data/wiki-1k-train-insert-swap.txt')
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
 testing_test_data = MyDataset('one-hot_encoding/data/wiki-1k-test-insert-swap.txt')
 testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
@@ -38,37 +25,13 @@ testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
 alphabet = training_data.charlist
 
-#for x in training_data_loader:
-#    print(x['bad_sample'].shape)
-#    print(x['label'].shape)
-#    print(x['ok_sample_one_hot'].shape)
-#    print(x['bad_sample_one_hot'].shape)
-#    break
-
-model = Conv2BiggerKernelAggRecurrentCorrection()
+model = ConvLSTMCorrection()
 model.to(device)
-#nn.BCEWithLogitsLoss
-loss_fn = nn.MSELoss()
+loss_fn = nn.CrossEntropyLoss()
 print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():
     print(name, param.size())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-def typos(item):#old very slow
-    for i_batch, samples in enumerate(item['label']):
-        bad_sample = []
-        for i_sample, character in enumerate(item['ok_text'][i_batch]):
-            if ((character>='A'<='Z') or (character>='a'<='z') ):
-                if torch.rand(1).item()<=0.1:
-                    character = chr(int((torch.rand(1).item()*26)) + 97)
-                    if character != item['ok_text'][i_batch][i_sample]: 
-                        item['label'][i_batch][i_sample] = 0
-                        item['bad_sample_one_hot'][i_batch][i_sample] = torch.zeros(162)#training_data.channels
-                        item['bad_sample_one_hot'][i_batch][i_sample][alphabet.index(character)] = 1
-                        item['bad_sample'][i_batch][i_sample] = alphabet.index(character)
-            bad_sample.append(character)
-        item['bad_text'][i_batch] = ''.join(bad_sample)
-    return item
 
 
 def add_typos(item):
@@ -121,68 +84,74 @@ def add_typos(item):
     return item
 
 def train():
-    #n_total_steps = len(training_data_loader)
-    for epoch in range(epochs):
-        for i, item in enumerate(training_data_loader):
-            item = add_typos(item)
+    iteration = 0
+    while (iteration < max_iterations):
+        for item in training_data_loader:
+            iteration += 1
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
-            #print(item['bad_sample_one_hot'].shape)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
             item['ok_sample'] = item['ok_sample'].to(device)
             outputs = model(item['bad_sample_one_hot'])
+            item['ok_sample'] = item['ok_sample'].long()
             loss = loss_fn(outputs, item['ok_sample'])
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        with torch.no_grad():
-            print(f'epoch {epoch+1}, loss = {loss.item():.4f}')
-            #wandb.log({"loss": loss})
-            # Optional
-            #wandb.watch(model)
-            #print('Train data test:')
-            #test(testing_train_data_loader)
-            if (epoch+1)%10 == 0 and loss.item() < 10:
-              print('Train data test:')
-              test(testing_train_data_loader)
-              print('\033[0;34mTest data test:\033[0;37m')
-              test(testing_test_data_loader)
+
+            if iteration%500 == 0:
+                lr = 'lr'
+                print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
+            if iteration%500 == 0:
+                optimizer.param_groups[0]['lr'] *= 0.85
+                with torch.no_grad():
+                    print('Train data test:')
+                    test(testing_train_data_loader)
+                    print('\033[0;34mTest data test:\033[0;37m')
+                    test(testing_test_data_loader)
+            if iteration >= max_iterations:
+                torch.save(model, 'ConvLSTMCorrection.pt')
+                break
 
 def test(data_loader):
-    #TP, FP, TN, FN, TPR, PPV, F1, ACC_CM, TNR, BA = 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-    #confusion_matrix = torch.rand(2,2)
     correct = 0
     all= 0
+    corrected_typos = 0
+    all_typos = 0
+    created_typos = 0
+
     for i, item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
         item['ok_sample'] = item['ok_sample'].to(device)
-        #print(item['bad_sample_one_hot'].shape)
         outputs = model(item['bad_sample_one_hot'])
         outputs = outputs[0]
+        pred = torch.squeeze(torch.topk(outputs, 1, dim=0, sorted=False).indices)
+        item['label'] = item['label'][0]
         item['ok_sample'] = item['ok_sample'][0]
-        outputs = outputs.round()
-        output_text_list = list(outputs)
-        for index, out in enumerate(outputs):
-            if item['ok_sample'][index] == out: correct+=1
+        output_text_list = list(pred)
+
+        for index, p in enumerate(pred):
+            if item['ok_sample'][index] == p: correct+=1
+            if item['label'][index] == 0:
+                all_typos += 1
+                if item['ok_sample'][index] == p: corrected_typos+=1
+            else:
+                if item['ok_sample'][index] != p: created_typos+=1
             if i>data_loader.__len__()-6:
-                out = min(68, out.int())
-                output_text_list[index] = alphabet[out]
+                output_text_list[index] = alphabet[p]
             all +=1
+
         if i>data_loader.__len__()-6:
             output_text = ''.join(output_text_list)
             ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
             ansi_print.a_print(output_text, item['ok_text'][0], 'red')
-    #TPR = TP/(TP+FN) #sensitivity, recall, hit rate, or true positive rate (TPR)
-    #TNR = TN/(TN+FP) #specificity, selectivity or true negative rate (TNR)
-    #PPV = TP/(TP+FP) #precision or positive predictive value (PPV)
-    #F1 = 2 * (PPV * TPR)/(PPV + TPR) #F1 score is the harmonic mean of precision and sensitivity:
-    #ACC_CM = (TP + TN)/(TP + TN + FP + FN) #accuracy
-    #BA = (TPR + TNR)/2 #balanced accuracy
-    acc = correct/all
-    print(f'Accuracy: {acc*100:.2f}%')
-    #print(f'Balanced accuracy: {BA*100:.2f}%')
-    #print(f'Recall: {TPR:.4f}, TNR: {TNR:.4f}, Precision: {PPV:.4f}, F1: {F1:.4f}')
 
+    acc = correct/all
+    acc_corrected = corrected_typos/all_typos
+    acc_corrected_created = corrected_typos/(all_typos+created_typos)
+    print(f'Accuracy: {acc*100:.2f}%')
+    print(f'Corrected typos: {corrected_typos} / {all_typos}, {ansi_print.colors.GREEN}{acc_corrected*100:.2f}%{ansi_print.colors.RESET}')
+    print(f'Typos created: {created_typos}, final acc: {ansi_print.colors.GREEN}{acc_corrected_created*100:.2f}%{ansi_print.colors.RESET}')
 
 train()

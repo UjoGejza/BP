@@ -1,5 +1,6 @@
 import torch
 from numpy import random
+import numpy as np
 
 #load_dataset("wikipedia", "20220301.simple")
 
@@ -20,6 +21,11 @@ class bcolors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+
+
+batch_size = 50        
+batch_index = torch.tensor(np.arange(0, batch_size, 0.25), dtype=int)
+fff = batch_index[0::4]
 
 error_index = random.randint(50, size=(5))
 error_char = random.randint(low=97, high=123, size=(5))

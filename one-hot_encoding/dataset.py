@@ -22,12 +22,12 @@ class MyDataset(Dataset):
         self.labels = torch.zeros(sample_count, sample_size)
         self.ok_samples_one_hot = torch.zeros(sample_count, sample_size, channels)
         self.bad_samples_one_hot = torch.zeros(sample_count, sample_size, channels)
-        self.ok_text = np.ndarray(shape=(sample_count, sample_size))
-        self.bad_text = np.ndarray(shape=(sample_count, sample_size))
+        self.ok_text = np.array(lines[1::3])
+        self.bad_text = np.array(lines[2::3])
 
         self.IDs = lines[::3]
-        self.ok_text = lines[1::3]
-        self.bad_text = lines[2::3]
+        #self.ok_text = lines[1::3]
+        #self.bad_text = lines[2::3]
 
         for index,id in enumerate(self.IDs):
             id = int(id[2:])

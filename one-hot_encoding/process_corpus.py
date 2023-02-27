@@ -6,8 +6,8 @@ from numpy import random
 #<sample>
 #<sample>
 def process_corpus(file:str):
-    f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_processed.txt', "w", encoding="UTF-8", errors='ignore')
+    f = open(file, "r", encoding="UTF-8", errors='ignore')
+    o = open(file[:-4]+'_processed_500k.txt', "w", encoding="UTF-8", errors='ignore')
     id = 0
     sample_length = 50
     rest_of_line = ''
@@ -27,9 +27,11 @@ def process_corpus(file:str):
             else: start_sample += sample_length
             sample = line[start_sample:(start_sample+sample_length)]
             if len(sample) != sample_length: break
+            if id > 2_000_000:
+                break
         rest_of_line = sample[:sample.find('\n')]+' '
         start_sample = 0
-        if id > 10000:
+        if id > 500_000:
             break
     f.close()
     o.close()
@@ -80,7 +82,7 @@ def add_typos(file:str, prob:float):
 
 def new_add_typos_and_insert_chars(file:str):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'-new-typos.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'_typos.txt', "w", encoding="UTF-8")
     lines = f.readlines()
     IDs = lines[0::3]
     clear = lines[1::3]
@@ -106,13 +108,19 @@ def new_add_typos_and_insert_chars(file:str):
     f.close()
     o.close()
 
-#process_corpus('one-hot_encoding/data/corpus_test.txt')
+#process_corpus('one-hot_encoding/data/scifi_smaller.txt')
+new_add_typos_and_insert_chars('one-hot_encoding/data/scifi_500k.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
 #insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
 #add_typos('one-hot_encoding/data/wiki-1k-test-insert.txt', 0.05)
-new_add_typos_and_insert_chars('one-hot_encoding/data/wiki-1k-test.txt')
-new_add_typos_and_insert_chars('one-hot_encoding/data/wiki-1k-train.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/wiki_test_30k.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/wiki_2M.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/wiki_4M.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/wiki_all.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/scifi_test_30k.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/scifi_2M.txt')
+#new_add_typos_and_insert_chars('one-hot_encoding/data/scifi_all.txt')
 
 
 
