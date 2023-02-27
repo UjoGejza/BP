@@ -15,17 +15,26 @@ print(f'USING: {device}')
 batch_size = 50
 max_iterations = 40_000
 learning_rate = 0.001
+train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
+test_test_file = 'one-hot_encoding/data/wiki-1k-test-insert-swap.txt'
+test_train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
 
-training_data = MyDataset('one-hot_encoding/data/wiki-1k-train-insert-swap.txt')
+training_data = MyDataset(train_file)
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
-testing_test_data = MyDataset('one-hot_encoding/data/wiki-1k-test-insert-swap.txt')
+testing_test_data = MyDataset(test_test_file)
 testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
-testing_train_data = MyDataset('one-hot_encoding/data/wiki-1k-train-insert-swap.txt')
+testing_train_data = MyDataset(test_train_file)
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
+
+print(f'train file: {train_file}')
+print(f'test test file: {test_test_file}')
+print(f'test train file: {test_train_file}')
+print(f'max iters: {max_iterations}')
 
 alphabet = training_data.charlist
 
 model = ConvLSTMCorrection()
+print('model class: ConvLSTMCorrection')
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
 print(f'MODEL ARCHITECTURE: ')
@@ -104,11 +113,13 @@ def train():
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
             if iteration%500 == 0:
                 optimizer.param_groups[0]['lr'] *= 0.85
+                model.eval()
                 with torch.no_grad():
                     print('Train data test:')
                     test(testing_train_data_loader)
                     print('\033[0;34mTest data test:\033[0;37m')
                     test(testing_test_data_loader)
+                    model.train()
             if iteration >= max_iterations:
                 torch.save(model, 'ConvLSTMCorrection.pt')
                 break
