@@ -2,22 +2,43 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+import argparse
 
 from numpy import random
 
 from dataset import MyDataset
-from models import ConvLSTMDetection
+from models import ConvLSTMDetectionBigger
 import ansi_print
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-bs', type=int, default=50)
+    parser.add_argument('-mi', type=int, default=200_000)
+    parser.add_argument('-lr', type=float, default=0.001)
+    parser.add_argument('-lr_scale', type=float, default=0.9)
+    parser.add_argument('-lr_scaleiter', type=int, default=10_000)
+    parser.add_argument('-online', type=bool, default=True)
+    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
+    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data/wiki-20k_typos_train_1k.txt')
+    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data/wiki_test_test_1k_typos2.txt')
+    return parser.parse_args()
+
+args = parseargs()
+
+print(args)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'USING: {device}')
 
-batch_size = 50
-max_iterations = 40_000
-learning_rate = 0.001
-train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
-test_test_file = 'one-hot_encoding/data/wiki-1k-test-insert-swap.txt'
-test_train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
+batch_size = args.bs
+max_iterations = args.mi
+learning_rate = args.lr
+learning_rate_scale = args.lr_scale
+learning_rate_scale_iter = args.lr_scaleiter
+online = args.online
+train_file = args.train_file
+test_test_file = args.test_test_file
+test_train_file = args.test_train_file
 
 training_data = MyDataset(train_file)
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
@@ -26,14 +47,10 @@ testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
 testing_train_data = MyDataset(test_train_file)
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
-print(f'train file: {train_file}')
-print(f'test test file: {test_test_file}')
-print(f'test train file: {test_train_file}')
-print(f'max iters: {max_iterations}')
 
 alphabet = training_data.charlist
 
-model = ConvLSTMDetection()
+model = ConvLSTMDetectionBigger()
 print('model class: ConvLSTMDetection')
 model.to(device)
 #nn.BCEWithLogitsLoss
@@ -43,7 +60,11 @@ for name, param in model.state_dict().items():
     print(name, param.size())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-
+green = 'green'
+yellow = 'yellow'
+red = 'red'
+white = 'white'
+id = 'id'
 
 def add_typos(item):
     error_index = random.randint(50, size=(4*50))
@@ -99,7 +120,7 @@ def train():
     while (iteration < max_iterations):
         for item in training_data_loader:
             iteration += 1
-            #item = add_typos(item)
+            if online: item = add_typos(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
             item['label'] = item['label'].to(device)
@@ -111,10 +132,10 @@ def train():
             loss.backward()
             optimizer.step()
             
-            if (iteration)%500 == 0:
+            if (iteration)%400 == 0:
                 lr = 'lr'
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}') 
-            if (iteration)%500 == 0:
+            if (iteration)%5000 == 0:
                 optimizer.param_groups[0]['lr'] *= 0.85
                 model.eval()
                 with torch.no_grad():
@@ -145,8 +166,10 @@ def test(data_loader):
             if item['label'][index] == 0 and out == 1: FP +=1
             if item['label'][index] == 0 and out == 0: TN +=1
         if i>data_loader.__len__()-6:
-            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
-            ansi_print.a_print(outputs, item['label'], 'red')
+            print(f'ID: {item[id][0]}')
+            print(item['ok_text'][0])
+            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], white, yellow)
+            ansi_print.a_print(outputs, item['label'], green, red)
     confusion_matrix[0][0] = TP
     confusion_matrix[0][1] = FN
     confusion_matrix[1][0] = FP
@@ -160,7 +183,7 @@ def test(data_loader):
     BA = (TPR + TNR)/2 #balanced accuracy
     print(f'Accuracy: {ACC_CM*100:.2f}%')
     print(f'Balanced accuracy: {BA*100:.2f}%')
-    print(f'Recall: {TPR:.4f}, TNR: {ansi_print.colors.GREEN}{TNR:.4f}{ansi_print.colors.RESET}, Precision: {PPV:.4f}, F1: {F1:.4f}')
+    print(f'Recall: {TPR:.4f}, TNR: {ansi_print.colors[green]}{TNR:.4f}{ansi_print.colors[white]}, Precision: {PPV:.4f}, F1: {F1:.4f}')
 
 
 train()

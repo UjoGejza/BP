@@ -2,22 +2,43 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+import argparse
 
 from numpy import random
 
 from dataset import MyDataset
-from models import ConvLSTMCorrection
+from models import ConvLSTMCorrectionBigger
 import ansi_print
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-bs', type=int, default=50)
+    parser.add_argument('-mi', type=int, default=200_000)
+    parser.add_argument('-lr', type=float, default=0.001)
+    parser.add_argument('-lr_scale', type=float, default=0.9)
+    parser.add_argument('-lr_scaleiter', type=int, default=10_000)
+    parser.add_argument('-online', type=bool, default=True)
+    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
+    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data/wiki-20k_typos_train_1k.txt')
+    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data/wiki_test_test_1k_typos2.txt')
+    return parser.parse_args()
+
+args = parseargs()
+
+print(args)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'USING: {device}')
 
-batch_size = 50
-max_iterations = 40_000
-learning_rate = 0.001
-train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
-test_test_file = 'one-hot_encoding/data/wiki-1k-test-insert-swap.txt'
-test_train_file = 'one-hot_encoding/data/wiki-1k-train-insert-swap.txt'
+batch_size = args.bs
+max_iterations = args.mi
+learning_rate = args.lr
+learning_rate_scale = args.lr_scale
+learning_rate_scale_iter = args.lr_scaleiter
+online = args.online
+train_file = args.train_file
+test_test_file = args.test_test_file
+test_train_file = args.test_train_file
 
 training_data = MyDataset(train_file)
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = True)
@@ -26,14 +47,10 @@ testing_test_data_loader = DataLoader(testing_test_data, shuffle=True)
 testing_train_data = MyDataset(test_train_file)
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
-print(f'train file: {train_file}')
-print(f'test test file: {test_test_file}')
-print(f'test train file: {test_train_file}')
-print(f'max iters: {max_iterations}')
 
 alphabet = training_data.charlist
 
-model = ConvLSTMCorrection()
+model = ConvLSTMCorrectionBigger()
 print('model class: ConvLSTMCorrection')
 model.to(device)
 loss_fn = nn.CrossEntropyLoss()
@@ -41,6 +58,12 @@ print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():
     print(name, param.size())
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+green = 'green'
+yellow = 'yellow'
+red = 'red'
+white = 'white'
+id = 'id'
 
 
 def add_typos(item):
@@ -97,6 +120,8 @@ def train():
     while (iteration < max_iterations):
         for item in training_data_loader:
             iteration += 1
+            if online: item = add_typos(item)
+            #print(iteration)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
             item['ok_sample'] = item['ok_sample'].to(device)
@@ -108,11 +133,12 @@ def train():
             loss.backward()
             optimizer.step()
 
-            if iteration%500 == 0:
+            if iteration%400 == 0:
                 lr = 'lr'
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
-            if iteration%500 == 0:
-                optimizer.param_groups[0]['lr'] *= 0.85
+            if iteration%learning_rate_scale_iter == 0:
+                optimizer.param_groups[0]['lr'] *= learning_rate_scale
+            if iteration%5000 == 0:
                 model.eval()
                 with torch.no_grad():
                     print('Train data test:')
@@ -130,6 +156,7 @@ def test(data_loader):
     corrected_typos = 0
     all_typos = 0
     created_typos = 0
+
 
     for i, item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -155,14 +182,16 @@ def test(data_loader):
 
         if i>data_loader.__len__()-6:
             output_text = ''.join(output_text_list)
-            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0], 'yellow')
-            ansi_print.a_print(output_text, item['ok_text'][0], 'red')
+            print(f'ID: {item[id][0]}')
+            print(item['ok_text'][0])
+            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
+            ansi_print.a_print(output_text, item['ok_text'][0],green, red)
 
     acc = correct/all
     acc_corrected = corrected_typos/all_typos
     acc_corrected_created = corrected_typos/(all_typos+created_typos)
     print(f'Accuracy: {acc*100:.2f}%')
-    print(f'Corrected typos: {corrected_typos} / {all_typos}, {ansi_print.colors.GREEN}{acc_corrected*100:.2f}%{ansi_print.colors.RESET}')
-    print(f'Typos created: {created_typos}, final acc: {ansi_print.colors.GREEN}{acc_corrected_created*100:.2f}%{ansi_print.colors.RESET}')
+    print(f'Corrected typos: {corrected_typos} / {all_typos}, {ansi_print.colors[green]}{acc_corrected*100:.2f}%{ansi_print.colors[white]}')
+    print(f'Typos created: {created_typos}, final acc: {ansi_print.colors[green]}{acc_corrected_created*100:.2f}%{ansi_print.colors[white]}')
 
 train()

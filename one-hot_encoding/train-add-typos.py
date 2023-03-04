@@ -60,6 +60,10 @@ def add_typos(item):
 def new_add_typos(item):
     error_index = random.randint(50, size=(4*batch_size))
     error_char = random.randint(low=97, high=123, size=(4*batch_size))
+    print(item['bad_sample'][[0, 1, 2]])
+    print(item['bad_sample'][[0, 0, 0, 1, 2], [2, 1, 0, 0, 0]])
+    item['bad_sample'][[0, 0, 0, 1, 2], [2, 1, 0, 0, 0]] = torch.tensor([501, 502, 503, 504, 505], dtype=torch.float)
+    print(item['bad_sample'][[0, 1, 2]])
     #extra_char_one_hot = torch.zeros(1, 69)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*batch_size):
@@ -73,7 +77,7 @@ def new_add_typos(item):
                 #item['label'][i//4][error_index[i]] = 0
                 item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(69)#training_data.channels
                 item['bad_sample_one_hot'][i//4][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
-                #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+                #item['bad_sample'][i//4][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
         else:
             #insert extra char
             base_one_hot = torch.zeros(1, 69)
@@ -111,7 +115,8 @@ def train():
     for epoch in range(epochs):
         print(epoch)
         for i, item in enumerate(training_data_loader):
-            item = new_add_typos(item)
+            #item = new_add_typos(item)
+            print(i)
             #item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             #print(item['id'][49])
             #print(item['ok_text'][49])

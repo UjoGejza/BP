@@ -307,6 +307,98 @@ class ConvLSTMDetection(nn.Module):
         x,_ = self.rec(x)
         x = x.permute(1, 2, 0)
         return self.conv2(x)
+    
+
+class ConvLSTMCorrectionBigger(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.Conv1d(512, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 69, 5, padding=2),
+                    nn.BatchNorm1d(69),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
+class ConvLSTMDetectionBigger(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.Conv1d(512, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 64, 5, padding=2),
+                    nn.BatchNorm1d(64),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(64, 64, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(64, 32, 9, padding=4),
+                    nn.BatchNorm1d(32),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(32, 32, 9, padding=4),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(32, 1, 5, padding=2),
+                    nn.BatchNorm1d(1),
+                    nn.LeakyReLU(),
+                    nn.Sigmoid()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
 
 class Conv2BiggerKernelAggRecurrentDetection(nn.Module):
     def __init__(self):

@@ -109,7 +109,7 @@ def new_add_typos_and_insert_chars(file:str):
     o.close()
 
 #process_corpus('one-hot_encoding/data/scifi_smaller.txt')
-new_add_typos_and_insert_chars('one-hot_encoding/data/scifi_500k.txt')
+new_add_typos_and_insert_chars('one-hot_encoding/data/wiki-20k.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
 #insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)

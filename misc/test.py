@@ -22,16 +22,18 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
+samples = torch.zeros(4, 5, dtype=float)
+batch_index = torch.tensor(np.arange(0, 50, 0.25), dtype=int)
+samples[0] = torch.tensor([1, 2, 3, 4, 5])
+samples[1] = torch.tensor([6, 7, 8, 9, 10])
+samples[2] = torch.tensor([11, 12, 13, 14, 15])
+samples[3] = torch.tensor([16, 17, 18, 19, 20])
+error_index = random.randint(5, size=(2*4))
+error_char = random.randint(low=97, high=123, size=(2*4))
+print(samples[[0, 0, 1]])
+samples[[0, 0, 1], [0, 2, 3]] = torch.tensor([50, 60, 70], dtype=float)
+print(samples)
 
-batch_size = 50        
-batch_index = torch.tensor(np.arange(0, batch_size, 0.25), dtype=int)
-fff = batch_index[0::4]
-
-error_index = random.randint(50, size=(5))
-error_char = random.randint(low=97, high=123, size=(5))
-
-print(error_index)
-print(error_char)
 
 pismeno1 = torch.tensor([0, 0, 1, 0, 0, 0])
 pismeno2 = torch.tensor([1, 0, 0, 0, 0, 0])
