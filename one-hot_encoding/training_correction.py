@@ -17,7 +17,8 @@ def parseargs():
     parser.add_argument('-lr', type=float, default=0.001)
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
-    parser.add_argument('-online', type=bool, default=True)
+    parser.add_argument('-online', type=int, default=1)
+    parser.add_argument('-save_model', type=str, default='ConvLSTMCorrection.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
     parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data/wiki-20k_typos_train_1k.txt')
     parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data/wiki_test_test_1k_typos2.txt')
@@ -36,6 +37,7 @@ learning_rate = args.lr
 learning_rate_scale = args.lr_scale
 learning_rate_scale_iter = args.lr_scaleiter
 online = args.online
+save_model = args.save_model
 train_file = args.train_file
 test_test_file = args.test_test_file
 test_train_file = args.test_train_file
@@ -147,7 +149,7 @@ def train():
                     test(testing_test_data_loader)
                     model.train()
             if iteration >= max_iterations:
-                torch.save(model, 'ConvLSTMCorrection.pt')
+                torch.save(model, save_model)
                 break
 
 def test(data_loader):

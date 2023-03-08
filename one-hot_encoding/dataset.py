@@ -8,13 +8,18 @@ class MyDataset(Dataset):
         self.charlist = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
          'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 
          'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '%','.', '#']
+        
+        self.charlist_ctc = ['~', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+         'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 
+         'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',','.', '#']#blank at 0, removed % for now
 
+        alphabet = self.charlist_ctc
 
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
         sample_count = len(lines)//3
         sample_size = len(lines[1])-1#ignore '\n'?
-        channels = len(self.charlist)
+        channels = len(alphabet)
         
         self.IDs = torch.zeros(sample_count)
         self.ok_samples = torch.zeros(sample_count, sample_size)
@@ -39,10 +44,10 @@ class MyDataset(Dataset):
             sample = []
             sample_txt = []
             for i,character in enumerate(self.ok_text[index]):
-                if (character not in self.charlist): character = ' '
+                if (character not in alphabet) or (character == '~'): character = ' '
                 sample_txt.append(character)
-                sample.append(self.charlist.index(character))
-                self.ok_samples_one_hot[index][i][self.charlist.index(character)] = 1
+                sample.append(alphabet.index(character))
+                self.ok_samples_one_hot[index][i][alphabet.index(character)] = 1
             self.ok_samples[index] = torch.tensor(sample)
             self.ok_text[index] = ''.join(sample_txt)
 
@@ -50,10 +55,10 @@ class MyDataset(Dataset):
             sample = [] 
             sample_txt = []           
             for i,character in enumerate(self.bad_text[index]):
-                if (character not in self.charlist): character = ' '
+                if (character not in alphabet): character = ' '
                 sample_txt.append(character)
-                sample.append(self.charlist.index(character))
-                self.bad_samples_one_hot[index][i][self.charlist.index(character)] = 1
+                sample.append(alphabet.index(character))
+                self.bad_samples_one_hot[index][i][alphabet.index(character)] = 1
             self.bad_samples[index] = torch.tensor(sample)
             self.bad_text[index] = ''.join(sample_txt)
 
@@ -73,7 +78,7 @@ class MyDataset(Dataset):
                 'bad_sample_one_hot': self.bad_samples_one_hot[idx],
                 'ok_text': self.ok_text[idx],
                 'bad_text': self.bad_text[idx],
-                'label': self.labels[idx],}
+                'label': self.labels[idx]}
 
 
 
