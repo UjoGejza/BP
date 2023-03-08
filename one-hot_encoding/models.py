@@ -270,6 +270,38 @@ class ConvLSTMCorrection(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+class ConvLSTMCorrectionCTC(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 2, bidirectional=True)
+        self.conv2 = [nn.ConvTranspose1d(512, 256, 9, padding=2),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 128, 9, padding=2),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 69, 5, padding=1),
+                    nn.BatchNorm1d(69),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
 class ConvLSTMDetection(nn.Module):
     def __init__(self):
         super().__init__()
