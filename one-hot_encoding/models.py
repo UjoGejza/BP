@@ -273,7 +273,7 @@ class ConvLSTMCorrection(nn.Module):
 class ConvLSTMCorrectionCTC(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = [nn.Conv1d(69, 128, 9, padding=4),
+        self.conv1 = [nn.Conv1d(90, 128, 9, padding=4),
                     nn.BatchNorm1d(128),
                     nn.LeakyReLU(),
                     nn.Conv1d(128, 256, 9, padding=4),
@@ -290,8 +290,8 @@ class ConvLSTMCorrectionCTC(nn.Module):
                     nn.ConvTranspose1d(256, 128, 9, padding=2),
                     nn.BatchNorm1d(128),
                     nn.LeakyReLU(),
-                    nn.ConvTranspose1d(128, 69, 5, padding=1),
-                    nn.BatchNorm1d(69),
+                    nn.ConvTranspose1d(128, 90, 5, padding=1),
+                    nn.BatchNorm1d(90),
                     nn.LeakyReLU()]
         self.conv2 = nn.Sequential(*self.conv2)
 

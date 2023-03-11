@@ -18,6 +18,7 @@ def parseargs():
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
     parser.add_argument('-online', type=int, default=1)
+    parser.add_argument('-load_model', type=str, default='')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrection.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
     parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data/wiki-20k_typos_train_1k.txt')

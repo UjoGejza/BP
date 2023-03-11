@@ -128,8 +128,8 @@ def new_add_typos_and_insert_chars_and_delete(file:str):
                 dirty[idx][error_index[i]] = chr(error_char[i])
             if i%5==4:
                 dirty[idx].insert(error_index[i], chr(error_char[i]))
-                clear[idx].insert(error_index[i], '#')
-                clear[idx].pop(len(clear[idx])-2)
+                #clear[idx].insert(error_index[i], '#')
+                #clear[idx].pop(len(clear[idx])-2)
                 dirty[idx].pop(len(dirty[idx])-2)
             if i%5==3:
                 dirty[idx].pop(error_index[i])
@@ -141,7 +141,7 @@ def new_add_typos_and_insert_chars_and_delete(file:str):
 
 
 #process_corpus('one-hot_encoding/data/scifi_smaller.txt')
-new_add_typos_and_insert_chars_and_delete('one-hot_encoding/data/scifi_all.txt')
+new_add_typos_and_insert_chars_and_delete('one-hot_encoding/data/wiki_all.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
 #insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
