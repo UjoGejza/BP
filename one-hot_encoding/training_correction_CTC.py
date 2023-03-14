@@ -13,7 +13,7 @@ import ansi_print
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-bs', type=int, default=50)
-    parser.add_argument('-mi', type=int, default=200_000)
+    parser.add_argument('-mi', type=int, default=600_000)
     parser.add_argument('-lr', type=float, default=0.001)
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
@@ -57,7 +57,7 @@ alphabet = training_data.charlist_extra_ctc
 channels = len(alphabet)
 
 model = ConvLSTMCorrectionCTC()
-print('model class: ConvLSTMCorrection')
+print('model class: ConvLSTMCorrectionCTC')
 if load_model !='_': model = torch.load(load_model)
 model.to(device)
 model.train()
@@ -129,7 +129,7 @@ def add_typos(item):#old
 
     return item
 
-def new_add_typos_delete(item):
+def new_add_typos_delete(item):#for ctc
     error_index = random.randint(sample_length, size=(5*batch_size))
     error_char = random.randint(low=97, high=123, size=(5*batch_size))
     base_one_hot = torch.zeros(1, channels)
@@ -197,10 +197,6 @@ def train():
             #print(iteration)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
-            #item['ok_sample'] = item['ok_sample'].permute(1,0)
-            #item['ok_sample'] = item['ok_sample'][:30]
-            #item['ok_sample'] = item['ok_sample'].permute(1,0)
-            #item['ok_sample'] = item['ok_sample'].to(device)
             outputs = model(item['bad_sample_one_hot'])
             outputs = outputs.permute(2, 0, 1)
             outputs = torch.nn.functional.log_softmax(outputs, 2)
@@ -211,12 +207,12 @@ def train():
             loss.backward()
             optimizer.step()
 
-            if iteration%500 == 0:
+            if iteration%100 == 0:
                 lr = 'lr'
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
             if iteration%learning_rate_scale_iter == 0:
                 optimizer.param_groups[0]['lr'] *= learning_rate_scale
-            if iteration%2000 == 0:
+            if iteration%500 == 0:
                 model.eval()
                 with torch.no_grad():
                     print('Train data test:')
@@ -228,12 +224,24 @@ def train():
                 torch.save(model, save_model)
                 break
 
+#https://stackoverflow.com/questions/2460177/edit-distance-in-python
+def levenshteinDistance(s1, s2):
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2+1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]
+
 def test(data_loader):
-    correct = 0
-    all= 0
-    corrected_typos = 0
-    all_typos = 0
-    created_typos = 0
+    sum_distance = 0
 
     for i, item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -244,38 +252,39 @@ def test(data_loader):
         pred = torch.squeeze(torch.topk(outputs, 1, dim=0, sorted=False).indices)
         item['label'] = item['label'][0]
         item['ok_sample'] = item['ok_sample'][0]
-        output_text_list = list(pred)
+        output_list = list(pred)
 
-        #for index, p in enumerate(pred):
-            #if item['ok_sample'][index] == p: correct+=1
-            #if item['label'][index] == 0:
-            #    all_typos += 1
-            #    if item['ok_sample'][index] == p: corrected_typos+=1
-            #else:
-            #    if item['ok_sample'][index] != p: created_typos+=1
-            #if i>data_loader.__len__()-6:
-            #    output_text_list[index] = alphabet[p]
-            #all +=1
+        #remove all chains of the same character longer than 1 (aa -> a)
+        trimmed_output_list_str = []
+        for out in output_list:
+            if len(trimmed_output_list_str) == 0 or alphabet.index(trimmed_output_list_str[-1]) != out:
+                trimmed_output_list_str.append(alphabet[out])
 
-        if i>data_loader.__len__()-6:
-            output_text_list_no_blank = [x for x in output_text_list if x!= 0]
-            for index, p in enumerate(output_text_list_no_blank):
-                output_text_list_no_blank[index] = alphabet[p]
+        #remove "blank" (~) 
+        trimmed_output_list_txt_no_blank = [x for x in trimmed_output_list_str if x!= '~']
+        final_str = ''.join(trimmed_output_list_txt_no_blank)
+
+        edit_distance = levenshteinDistance(item['ok_text'][0], final_str)
+        sum_distance += edit_distance
 
         if i>data_loader.__len__()-6:
-            output_text = ''.join(output_text_list_no_blank)
-            print(f'ID: {item[id][0]}')
-            print(item['ok_text'][0])
-            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
-            print(output_text)
-            #ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
-            #ansi_print.a_print(output_text, item['ok_text'][0],green, red)
+            raw_output = []
+            for e in output_list:
+                raw_output.append(alphabet[e])
+            raw_output_str = ''.join(raw_output)
+            
+            
+            try:
+              print(f'ID: {item[id][0]}')
+              print(item['ok_text'][0])
+              ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
+              print(raw_output_str)
+              print(final_str)
+              ansi_print.a_print(final_str, item['ok_text'][0], green, red )
+              #print(f'edit distance: {edit_distance}')
+            except:
+              print('error printing example - prob encoding')
 
-    #acc = correct/all
-    #acc_corrected = corrected_typos/all_typos
-    #acc_corrected_created = corrected_typos/(all_typos+created_typos)
-    #print(f'Accuracy: {acc*100:.2f}%')
-    #print(f'Corrected typos: {corrected_typos} / {all_typos}, {ansi_print.colors[green]}{acc_corrected*100:.2f}%{ansi_print.colors[white]}')
-    #print(f'Typos created: {created_typos}, final acc: {ansi_print.colors[green]}{acc_corrected_created*100:.2f}%{ansi_print.colors[white]}')
+    print(f'Average edit distance: {ansi_print.colors[green]}{sum_distance/1000:.2f}{ansi_print.colors[white]}')
 
 train()

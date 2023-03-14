@@ -1,8 +1,7 @@
+#misc
 import torch
 from numpy import random
 import numpy as np
-
-#load_dataset("wikipedia", "20220301.simple")
 
 class bcolors:
     HEADER = '\033[95m'

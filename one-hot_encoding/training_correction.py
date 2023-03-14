@@ -18,7 +18,7 @@ def parseargs():
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
     parser.add_argument('-online', type=int, default=1)
-    parser.add_argument('-load_model', type=str, default='')
+    parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrection.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
     parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data/wiki-20k_typos_train_1k.txt')
@@ -38,6 +38,7 @@ learning_rate = args.lr
 learning_rate_scale = args.lr_scale
 learning_rate_scale_iter = args.lr_scaleiter
 online = args.online
+load_model = args.load_model
 save_model = args.save_model
 train_file = args.train_file
 test_test_file = args.test_test_file
@@ -54,8 +55,10 @@ testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 alphabet = training_data.charlist
 
 model = ConvLSTMCorrectionBigger()
-print('model class: ConvLSTMCorrection')
+print('model class: ConvLSTMCorrectionBigger')
+if load_model !='_': model = torch.load(load_model)
 model.to(device)
+model.train()
 loss_fn = nn.CrossEntropyLoss()
 print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():

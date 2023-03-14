@@ -1,6 +1,10 @@
 import torch
 from torch import nn
 
+#most of the models were just experimental
+
+#currently used: ConvLSTMCorrection/Detection(Bigger)(CTC)
+
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -270,6 +274,7 @@ class ConvLSTMCorrection(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+
 class ConvLSTMCorrectionCTC(nn.Module):
     def __init__(self):
         super().__init__()

@@ -108,7 +108,7 @@ def new_add_typos_and_insert_chars(file:str):
     f.close()
     o.close()
 
-def new_add_typos_and_insert_chars_and_delete(file:str):
+def new_add_typos_and_insert_chars_and_delete(file:str):#for ctc
     f = open(file, "r", encoding="UTF-8")
     o = open(file[:-4]+'_typos_CTC.txt', "w", encoding="UTF-8")
     lines = f.readlines()
