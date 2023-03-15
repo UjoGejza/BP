@@ -7,7 +7,7 @@ import argparse
 from numpy import random
 
 from dataset import MyDataset
-from models import ConvLSTMCorrectionCTC
+from models import ConvLSTMCorrectionCTCBigger
 import ansi_print
 
 def parseargs():
@@ -56,8 +56,8 @@ alphabet = training_data.charlist_extra_ctc
 
 channels = len(alphabet)
 
-model = ConvLSTMCorrectionCTC()
-print('model class: ConvLSTMCorrectionCTC')
+model = ConvLSTMCorrectionCTCBigger()
+print('model class: ConvLSTMCorrectionCTCBigger')
 if load_model !='_': model = torch.load(load_model)
 model.to(device)
 model.train()
