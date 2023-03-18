@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 import argparse
+import Levenshtein
 
 from numpy import random
 
@@ -224,24 +225,12 @@ def train():
                 torch.save(model, save_model)
                 break
 
-#https://stackoverflow.com/questions/2460177/edit-distance-in-python
-def levenshteinDistance(s1, s2):
-    if len(s1) > len(s2):
-        s1, s2 = s2, s1
+#https://stackoverflow.com/questions/2460177/edit-distance-in-python #replaced with Levenshtein lib
 
-    distances = range(len(s1) + 1)
-    for i2, c2 in enumerate(s2):
-        distances_ = [i2+1]
-        for i1, c1 in enumerate(s1):
-            if c1 == c2:
-                distances_.append(distances[i1])
-            else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-        distances = distances_
-    return distances[-1]
 
 def test(data_loader):
     sum_distance = 0
+    sum_ratio = 0
 
     for i, item in enumerate(data_loader):
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -264,8 +253,10 @@ def test(data_loader):
         trimmed_output_list_txt_no_blank = [x for x in trimmed_output_list_str if x!= '~']
         final_str = ''.join(trimmed_output_list_txt_no_blank)
 
-        edit_distance = levenshteinDistance(item['ok_text'][0], final_str)
+        edit_distance = Levenshtein.distance(final_str, item['ok_text'][0])
+        indel_ratio = Levenshtein.ratio(final_str, item['ok_text'][0])
         sum_distance += edit_distance
+        sum_ratio += indel_ratio
 
         if i>data_loader.__len__()-6:
             raw_output = []
@@ -286,5 +277,6 @@ def test(data_loader):
               print('error printing example - prob encoding')
 
     print(f'Average edit distance: {ansi_print.colors[green]}{sum_distance/1000:.2f}{ansi_print.colors[white]}')
+    print(f'Average indel similarity: {ansi_print.colors[green]}{sum_ratio/1000:.4f}{ansi_print.colors[white]}') #1 - normalized_distance
 
 train()

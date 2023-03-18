@@ -9,4 +9,5 @@
 /.vscode
 /one-hot_encoding/data
 /wandb
+/one-hot_encoding/results
 

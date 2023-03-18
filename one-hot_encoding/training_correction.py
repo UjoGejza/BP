@@ -52,7 +52,7 @@ testing_train_data = MyDataset(test_train_file)
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
 
-alphabet = training_data.charlist
+alphabet = training_data.charlist_base
 
 model = ConvLSTMCorrectionBigger()
 print('model class: ConvLSTMCorrectionBigger')
@@ -144,7 +144,7 @@ def train():
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
             if iteration%learning_rate_scale_iter == 0:
                 optimizer.param_groups[0]['lr'] *= learning_rate_scale
-            if iteration%5000 == 0:
+            if iteration%500 == 0:
                 model.eval()
                 with torch.no_grad():
                     print('Train data test:')
