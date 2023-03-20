@@ -23,7 +23,8 @@ class MyDataset(Dataset):
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
         sample_count = len(lines)//3
-        sample_size = len(lines[1])-1#ignore '\n'?
+        #sample_size = len(lines[1])-1#ignore '\n'?
+        sample_size = 60-1
         channels = len(alphabet)
         
         self.IDs = torch.zeros(sample_count)
@@ -54,7 +55,7 @@ class MyDataset(Dataset):
                 sample_txt.append(character)
                 sample.append(alphabet.index(character))
                 self.ok_samples_one_hot[index][i][alphabet.index(character)] = 1
-            self.ok_samples[index] = torch.tensor(sample)
+            self.ok_samples[index][:len(sample)] = torch.tensor(sample)
             self.ok_text[index] = ''.join(sample_txt)
 
             
@@ -66,7 +67,7 @@ class MyDataset(Dataset):
                 sample_txt.append(character)
                 sample.append(alphabet.index(character))
                 self.bad_samples_one_hot[index][i][alphabet.index(character)] = 1
-            self.bad_samples[index] = torch.tensor(sample)
+            self.bad_samples[index][:len(sample)] = torch.tensor(sample)
             self.bad_text[index] = ''.join(sample_txt)
 
             self.labels[index] = torch.tensor([1 if ok == bad else 0 for ok, bad in zip(self.ok_samples[index], self.bad_samples[index])])
@@ -79,13 +80,13 @@ class MyDataset(Dataset):
     def __getitem__(self, idx):
         #maybe move convert to one-hot here, idk
         return {'id': self.IDs[idx],
-                'ok_sample': self.ok_samples[idx],
-                'bad_sample': self.bad_samples[idx],
-                'ok_sample_one_hot': self.ok_samples_one_hot[idx],
-                'bad_sample_one_hot': self.bad_samples_one_hot[idx],
+                'ok_sample': self.ok_samples[idx][:len(self.ok_text[idx])],
+                'bad_sample': self.bad_samples[idx][:len(self.bad_text[idx])],
+                'ok_sample_one_hot': self.ok_samples_one_hot[idx][:len(self.ok_text[idx])],
+                'bad_sample_one_hot': self.bad_samples_one_hot[idx][:len(self.bad_text[idx])],
                 'ok_text': self.ok_text[idx],
                 'bad_text': self.bad_text[idx],
-                'label': self.labels[idx]}
+                'label': self.labels[idx][:len(self.bad_text[idx])]}
 
 
 

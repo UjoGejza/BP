@@ -13,7 +13,7 @@ def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='detection')
     parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ConvLSTMDetectionBigger2_3/ConvLSTMDetectionBigger2_3.pt')
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/scifi_test_test_1k_typos.txt')
+    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/examplerandom_length.txt')
     parser.add_argument('-output_file', type=str, default='test_output.txt')
     return parser.parse_args()
 

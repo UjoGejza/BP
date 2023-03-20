@@ -7,9 +7,10 @@ from numpy import random
 #<sample>
 def process_corpus(file:str):
     f = open(file, "r", encoding="UTF-8", errors='ignore')
-    o = open(file[:-4]+'_processed_500k.txt', "w", encoding="UTF-8", errors='ignore')
+    o = open(file[:-4]+'random_length.txt', "w", encoding="UTF-8", errors='ignore')
     id = 0
     sample_length = 50
+    old_sample_length = 50
     rest_of_line = ''
     start_sample = 0
     for line in f:
@@ -20,11 +21,13 @@ def process_corpus(file:str):
             o.write(f'ID{id}\n')
             o.write(sample+'\n')
             o.write(sample+'\n')
+            old_sample_length = sample_length
+            sample_length = random.randint(low=40, high=60)#this generates random length of line/sample/input
             id += 1
             if start_sample==0:
-                start_sample = sample_length - len(rest_of_line)
-                if start_sample == 0 and sample!=rest_of_line: start_sample = sample_length
-            else: start_sample += sample_length
+                start_sample = old_sample_length - len(rest_of_line)
+                if start_sample == 0 and sample!=rest_of_line: start_sample = old_sample_length
+            else: start_sample += old_sample_length
             sample = line[start_sample:(start_sample+sample_length)]
             if len(sample) != sample_length: break
             if id > 2_000_000:
@@ -140,8 +143,8 @@ def new_add_typos_and_insert_chars_and_delete(file:str):#for ctc
     o.close()
 
 
-#process_corpus('one-hot_encoding/data/scifi_smaller.txt')
-new_add_typos_and_insert_chars_and_delete('one-hot_encoding/data/wiki_all.txt')
+process_corpus('one-hot_encoding/data/example.txt')
+#new_add_typos_and_insert_chars_and_delete('one-hot_encoding/data/wiki_all.txt')
 #add_typos('one-hot_encoding/data/wiki-1k-train.txt', 0.1)
 #add_typos('one-hot_encoding/data/wiki-1k-test.txt', 0.1)
 #insert_chars('one-hot_encoding/data/wiki-1k-test.txt', 0.025)
