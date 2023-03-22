@@ -18,13 +18,13 @@ class MyDataset(Dataset):
          'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '.','\'','"', '-',':',';' ,
          '(', ')', '%','/', '—', '–', '”', '“', '+', '=', '§', '[', ']', '’', '&', '*', '#']#blank at 0, size: 90
 
-        alphabet = self.charlist_base
+        alphabet = self.charlist_extra_ctc
 
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
         sample_count = len(lines)//3
         #sample_size = len(lines[1])-1#ignore '\n'?
-        sample_size = 60-1
+        sample_size = 60-1#50
         channels = len(alphabet)
         
         self.IDs = torch.zeros(sample_count)
@@ -80,13 +80,13 @@ class MyDataset(Dataset):
     def __getitem__(self, idx):
         #maybe move convert to one-hot here, idk
         return {'id': self.IDs[idx],
-                'ok_sample': self.ok_samples[idx][:len(self.ok_text[idx])],
-                'bad_sample': self.bad_samples[idx][:len(self.bad_text[idx])],
-                'ok_sample_one_hot': self.ok_samples_one_hot[idx][:len(self.ok_text[idx])],
-                'bad_sample_one_hot': self.bad_samples_one_hot[idx][:len(self.bad_text[idx])],
+                'ok_sample': self.ok_samples[idx],
+                'bad_sample': self.bad_samples[idx],
+                'ok_sample_one_hot': self.ok_samples_one_hot[idx],
+                'bad_sample_one_hot': self.bad_samples_one_hot[idx],
                 'ok_text': self.ok_text[idx],
                 'bad_text': self.bad_text[idx],
-                'label': self.labels[idx][:len(self.bad_text[idx])]}
+                'label': self.labels[idx]}
 
 
 

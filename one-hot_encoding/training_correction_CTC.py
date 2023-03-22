@@ -4,7 +4,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 import argparse
 import Levenshtein
-
+import numpy as np
 from numpy import random
 
 from dataset import MyDataset
@@ -66,8 +66,8 @@ loss_fn = nn.CTCLoss(zero_infinity=True)
 
 sample_length = 50
 
-lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
-target_lengths = torch.full(size=(batch_size, ), fill_value=50, dtype=torch.long)
+output_lengths = torch.full(size=(batch_size, ), fill_value=70, dtype=torch.long)
+target_lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
 
 print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():
@@ -81,7 +81,7 @@ white = 'white'
 id = 'id'
 
 
-def add_typos(item):#old
+def add_typos_old(item):#old
     error_index = random.randint(50, size=(4*50))
     error_char = random.randint(low=97, high=123, size=(4*50))
     #extra_char_one_hot = torch.zeros(1, 69)
@@ -130,7 +130,7 @@ def add_typos(item):#old
 
     return item
 
-def new_add_typos_delete(item):#for ctc
+def add_typos_old_2(item):#old
     error_index = random.randint(sample_length, size=(5*batch_size))
     error_char = random.randint(low=97, high=123, size=(5*batch_size))
     base_one_hot = torch.zeros(1, channels)
@@ -189,12 +189,79 @@ def new_add_typos_delete(item):#for ctc
             item['bad_sample_one_hot'][i//5] = torch.cat((item['bad_sample_one_hot'][i//5][:error_index[i]], item['bad_sample_one_hot'][i//5][error_index[i]+1:], base_one_hot_space), 0)
     return item
 
+def new_add_typos_RF(item):
+    typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )
+    typo_index = random.randint(50, size=(10*batch_size))
+    typo_char = random.randint(low=97, high=123, size=(10*batch_size))
+    base_one_hot = torch.zeros(1, 90)
+    base_one_hot_space =base_one_hot.detach().clone()
+    base_one_hot_space[0][alphabet.index(' ')] = 1
+    typo_i = 0
+    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot[0][alphabet.index('#')] = 1
+    for batch_i in range(batch_size):
+        #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete
+        typo_type = random.choice(3, typo_count[batch_i])
+        typo_type.sort()
+        typo_type = typo_type[::-1]#deleting first loses less information from end of samples
+        for i in range(typo_count[batch_i]):
+            typo_i +=1
+            if typo_type[i] == 0:
+                #swap char for another char
+                bad_text = list(item['bad_text'][batch_i])
+                #item['bad_sample'][i//4][error_index[i]] = alphabet.index(chr(error_char[i]))
+                bad_text[typo_index[typo_i]] = chr(typo_char[typo_i])
+                item['bad_text'][batch_i] = ''.join(bad_text)
+
+                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(90)#training_data.channels
+                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]][alphabet.index(chr(typo_char[typo_i]))] = 1
+                    #item['bad_sample'][i//4][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
+
+            if typo_type[i] == 1:
+                #insert extra char
+                insert_one_hot = base_one_hot.detach().clone()
+                insert_one_hot[0][alphabet.index(chr(typo_char[typo_i]))] = 1
+                bad_text = list(item['bad_text'][batch_i])
+                #ok_text = list(item['ok_text'][batch_i])
+                #label = list(item['label'][i//4])
+                #ok_sample = list(item['ok_sample'][batch_i])
+                #bad_sample = list(item['bad_sample'][i//4])
+            
+                bad_text.insert(typo_index[typo_i], chr(typo_char[typo_i]))
+                #ok_text.insert(error_index[i], '#')
+                #label.insert(error_index[i], 0)
+                #ok_sample.insert(error_index[i], alphabet.index('#'))
+                #bad_sample.insert(error_index[i], alphabet.index(chr(error_char[i])))
+                item['bad_sample_one_hot'][batch_i] = torch.cat((item['bad_sample_one_hot'][batch_i][:typo_index[typo_i]], insert_one_hot, item['bad_sample_one_hot'][batch_i][typo_index[typo_i]:-1]), 0)
+                #item['ok_sample_one_hot'][i//4] = torch.cat((item['ok_sample_one_hot'][i//4][:error_index[i]], extra_char_one_hot, item['ok_sample_one_hot'][i//4][error_index[i]:-1]), 0)
+            
+                bad_text.pop(len(bad_text)-1)
+                #ok_text.pop(len(ok_text)-1)
+                #label.pop(len(label)-1)
+                #ok_sample.pop(len(ok_sample)-1)
+                #bad_sample.pop(len(bad_sample)-1)
+
+                item['bad_text'][batch_i] = ''.join(bad_text)
+                #item['ok_text'][i//5] = ''.join(ok_text)
+                #item['label'][i//4] = torch.tensor(label)
+                #item['ok_sample'][i//5] = torch.tensor(ok_sample)
+                #item['bad_sample'][i//4] = torch.tensor(bad_sample)
+
+            if typo_type[i] == 2:
+                #delete char
+                bad_text = list(item['bad_text'][batch_i])
+                del bad_text[typo_index[typo_i]]
+                bad_text.insert(len(bad_text), ' ')
+                item['bad_text'][batch_i] = ''.join(bad_text)
+                item['bad_sample_one_hot'][batch_i] = torch.cat((item['bad_sample_one_hot'][batch_i][:typo_index[typo_i]], item['bad_sample_one_hot'][batch_i][typo_index[typo_i]+1:], base_one_hot_space), 0)
+    return item
+
 def train():
     iteration = 0
     while (iteration < max_iterations):
         for item in training_data_loader:
             iteration += 1
-            if online: item = new_add_typos_delete(item)
+            if online: item = new_add_typos_RF(item)
             #print(iteration)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -202,7 +269,7 @@ def train():
             outputs = outputs.permute(2, 0, 1)
             outputs = torch.nn.functional.log_softmax(outputs, 2)
             #item['ok_sample'] = item['ok_sample'].long()
-            loss = loss_fn(outputs, item['ok_sample'], lengths, target_lengths)
+            loss = loss_fn(outputs, item['ok_sample'], output_lengths, target_lengths)
 
             optimizer.zero_grad()
             loss.backward()
