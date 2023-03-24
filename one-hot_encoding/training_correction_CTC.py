@@ -66,8 +66,8 @@ loss_fn = nn.CTCLoss(zero_infinity=True)
 
 sample_length = 50
 
-output_lengths = torch.full(size=(batch_size, ), fill_value=70, dtype=torch.long)
-target_lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
+output_lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
+target_lengths = torch.full(size=(batch_size, ), fill_value=50, dtype=torch.long)
 
 print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():

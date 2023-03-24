@@ -150,7 +150,7 @@ def new_add_typos_ctc(file:str):#for ctc
 #all above typos functions are outdated
 def new_add_typos_RF(file:str):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_experiment.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'_typosRF3_CTC.txt', "w", encoding="UTF-8")
     lines = f.readlines()
     IDs = lines[0::3]
     ok = lines[1::3]
@@ -164,7 +164,7 @@ def new_add_typos_RF(file:str):
         #generate normal(5,2), round, to int, clip between 0 - 8
         typo_count = np.clip(int(np.round(random.normal(5, 2))), 0, 8 )
         
-        typo_index = random.randint(60, size=(typo_count))
+        typo_index = random.randint(50, size=(typo_count))
         typo_char = random.randint(low=97, high=123, size=(typo_count))
         
         #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete
@@ -179,7 +179,7 @@ def new_add_typos_RF(file:str):
             if typo_type[i] == 1:#insert
                 bad[idx].insert(typo_index[i], chr(typo_char[i]))
                 #if using insert with no CTC, uncomment these 2 lines
-                #ok[idx].insert(error_index[i], '#')
+                #ok[idx].insert(typo_index[i], '#')
                 #ok[idx].pop(len(ok[idx])-2)
                 bad[idx].pop(len(bad[idx])-2)#keeps bad the same and original length
             if typo_type[i] == 2:#delete (only use with CTC models)
@@ -192,7 +192,7 @@ def new_add_typos_RF(file:str):
 
 
 #process_corpus('one-hot_encoding/data/example.txt')
-new_add_typos_RF('one-hot_encoding/data/examplerandom_length.txt')
+new_add_typos_RF('one-hot_encoding/data/scifi_all.txt')
 
 
 

@@ -125,7 +125,7 @@ def new_add_typos_RF(item):
     typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )#set typo frequency
     typo_index = random.randint(50, size=(10*batch_size))
     typo_char = random.randint(low=97, high=123, size=(10*batch_size))
-    base_one_hot = torch.zeros(1, 90)
+    base_one_hot = torch.zeros(1, 69)
     base_one_hot_space =base_one_hot.detach().clone()
     base_one_hot_space[0][alphabet.index(' ')] = 1
     typo_i = 0
@@ -149,7 +149,7 @@ def new_add_typos_RF(item):
                 bad_text[typo_index[typo_i]] = chr(typo_char[typo_i])
                 item['bad_text'][batch_i] = ''.join(bad_text)
 
-                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(90)#training_data.channels
+                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(69)#training_data.channels
                 item['bad_sample_one_hot'][batch_i][typo_index[typo_i]][alphabet.index(chr(typo_char[typo_i]))] = 1
                     #item['bad_sample'][i//4][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
 
@@ -203,7 +203,7 @@ def train():
             loss.backward()
             optimizer.step()
 
-            if iteration%400 == 0:
+            if iteration%100 == 0:
                 lr = 'lr'
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
             if iteration%learning_rate_scale_iter == 0:

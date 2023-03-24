@@ -52,7 +52,7 @@ testing_train_data = MyDataset(test_train_file)
 testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
 
-alphabet = training_data.charlist
+alphabet = training_data.charlist_base
 
 model = ConvLSTMDetectionBigger()
 print('model class: ConvLSTMDetectionBigger')
@@ -125,7 +125,7 @@ def new_add_typos_RF(item):
     typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )
     typo_index = random.randint(50, size=(10*batch_size))
     typo_char = random.randint(low=97, high=123, size=(10*batch_size))
-    base_one_hot = torch.zeros(1, 90)
+    base_one_hot = torch.zeros(1, 69)
     base_one_hot_space =base_one_hot.detach().clone()
     base_one_hot_space[0][alphabet.index(' ')] = 1
     typo_i = 0
@@ -146,7 +146,7 @@ def new_add_typos_RF(item):
                     bad_text[typo_index[typo_i]] = chr(typo_char[typo_i])
                     item['bad_text'][batch_i] = ''.join(bad_text)
                     item['label'][batch_i][typo_index[typo_i]] = 0
-                    item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(90)#training_data.channels
+                    item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(69)#training_data.channels
                     item['bad_sample_one_hot'][batch_i][typo_index[typo_i]][alphabet.index(chr(typo_char[typo_i]))] = 1
                     #item['bad_sample'][i//4][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
 
@@ -187,7 +187,7 @@ def train():
     while (iteration < max_iterations):
         for item in training_data_loader:
             iteration += 1
-            if online: item = add_typos(item)
+            if online: item = new_add_typos_RF(item)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
             item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
             item['label'] = item['label'].to(device)
@@ -199,12 +199,12 @@ def train():
             loss.backward()
             optimizer.step()
             
-            if (iteration)%400 == 0:
+            if (iteration)%100 == 0:
                 lr = 'lr'
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}') 
             if iteration%learning_rate_scale_iter == 0:
                 optimizer.param_groups[0]['lr'] *= learning_rate_scale
-            if (iteration)%5000 == 0:
+            if (iteration)%500 == 0:
                 model.eval()
                 with torch.no_grad():
                     print('Train data test:')
