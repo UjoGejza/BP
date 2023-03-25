@@ -23,7 +23,7 @@ class MyDataset(Dataset):
          'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '.','\'','"', '-',':',';' ,
          '(', ')', '%','/', '—', '–', '”', '“', '+', '=', '§', '[', ']', '’', '&', '*', '#']#blank at 0, size: 90
 
-        alphabet = self.charlist_extra_ctc
+        alphabet = self.charlist_base
 
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
@@ -56,7 +56,7 @@ class MyDataset(Dataset):
             sample_txt = []
             for i,character in enumerate(self.ok_text[index]):
                 if (character not in alphabet) or (character == '~'): #change this to $ change it also lower
-                    character = '§'
+                    character = ' '
                 sample_txt.append(character)
                 sample.append(alphabet.index(character))
                 #self.ok_samples_one_hot[index][i][alphabet.index(character)] = 1
@@ -68,7 +68,7 @@ class MyDataset(Dataset):
             sample_txt = []           
             for i,character in enumerate(self.bad_text[index]):
                 if (character not in alphabet) or (character == '~'): 
-                    character = '§'
+                    character = ' '
                 sample_txt.append(character)
                 sample.append(alphabet.index(character))
                 self.bad_samples_one_hot[index][i][alphabet.index(character)] = 1

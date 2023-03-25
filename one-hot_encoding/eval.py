@@ -11,8 +11,8 @@ import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mode', type=str, default='correction')
-    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionBigger2_5.txt')
+    parser.add_argument('-mode', type=str, default='detection')
+    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMDetection4.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -71,11 +71,35 @@ def eval_CTC():
 
     f.close()
     
-    for i in range(5):
-        print(IDs[i])
-        print(ground_truths[i])
-        print(inputs[i])
-        print(outputs[i])
+    correct = 0
+    all= 0
+    fixes = 0
+    all_typos = 0
+    #created_typos = 0
+    sum_distance = 0
+    sum_ratio = 0
+
+    for sample_i,_ in enumerate(IDs):
+        edit_distance_input = Levenshtein.distance(inputs[sample_i][:-1], ground_truths[sample_i][:-1])
+        edit_distance_output = Levenshtein.distance(outputs[sample_i][:-1], ground_truths[sample_i][:-1])
+        fixes_sample = edit_distance_input - edit_distance_output
+        fixes += fixes_sample
+        all_typos += edit_distance_input
+        indel_ratio = Levenshtein.ratio(outputs[sample_i][:-1], ground_truths[sample_i][:-1])
+        sum_distance += edit_distance_output
+        sum_ratio += indel_ratio
+        all += len(outputs[sample_i][:-1])
+        correct += (len(outputs[sample_i][:-1]) - edit_distance_output)
+        
+    acc = correct/all
+    #acc_corrected = corrected_typos/all_typos
+    acc_abs = fixes/(all_typos)
+    print(f'Accuracy: {acc*100:.2f}%')
+    print(f'Fixed: {fixes}/{all}')
+    print(f'Corrected typos: _____ / _____, _____%')
+    print(f'Typos created: _____, final acc: {acc_abs*100:.2f}%')
+    print(f'Average edit distance: {sum_distance/len(IDs):.2f}')
+    print(f'Average indel similarity: {sum_ratio/len(IDs):.4f}') #1 - normalized_distance
 
 def eval_detection():
     f = open(file, "r", encoding="UTF-8")
