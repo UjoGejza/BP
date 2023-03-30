@@ -8,7 +8,7 @@ from numpy import random
 #<sample>
 def process_corpus(file:str):
     f = open(file, "r", encoding="UTF-8", errors='ignore')
-    o = open(file[:-4]+'random_length.txt', "w", encoding="UTF-8", errors='ignore')
+    o = open(file[:-4]+'_random_length_2M.txt', "w", encoding="UTF-8", errors='ignore')
     id = 0
     sample_length = 50
     old_sample_length = 50
@@ -35,10 +35,90 @@ def process_corpus(file:str):
                 break
         rest_of_line = sample[:sample.find('\n')]+' '
         start_sample = 0
-        if id > 500_000:
+        if id > 2_100_000:
             break
     f.close()
     o.close()
+
+def process_corpus_by_word(file:str):
+    f = open(file, "r", encoding="UTF-8", errors='ignore')
+    o = open(file[:-4]+'_random_length_BW_2M.txt', "w", encoding="UTF-8", errors='ignore')
+    id = 0
+    sample_length = 60
+    old_sample_length = 60
+    rest_of_line = ''
+    start_sample = 0
+    for line in f:
+        sample = line[start_sample:sample_length-len(rest_of_line)]
+        sample = rest_of_line + sample
+        space_index = sample.find(' ', 40, 60)
+        if space_index!= -1:
+                sample = sample[:space_index]
+                sample_length = space_index
+        #if len(sample) != sample_length: break
+        while sample.find('\n')==-1:
+            o.write(f'ID{id}\n')
+            o.write(sample+'\n')
+            o.write(sample+'\n')
+            old_sample_length = sample_length
+            #sample_length = random.randint(low=40, high=51)#this generates random length of line/sample/input
+            sample_length = 60
+            id += 1
+            if start_sample==0:
+                start_sample = old_sample_length - len(rest_of_line)
+                if start_sample == 0 and sample!=rest_of_line: start_sample = old_sample_length+1
+            else: start_sample += (old_sample_length+1)
+            sample = line[start_sample:(start_sample+sample_length)]
+            space_index = sample.find(' ', 40, 60)
+            if space_index!= -1:
+                sample = sample[:space_index]
+                sample_length = space_index
+            if len(sample) != sample_length: break
+            if id > 2_000_000:
+                break
+        rest_of_line = sample[:sample.find('\n')]+' '
+        start_sample = 0
+        if id > 2_100_000:
+            break
+    f.close()
+    o.close()
+
+def process_corpus_split_by_word(file:str):
+    f = open(file, "r", encoding="UTF-8", errors='ignore')
+    o = open(file[:-4]+'_random_length_BW_2M.txt', "w", encoding="UTF-8", errors='ignore')
+    id = 0
+    max_length = 60
+    min_length = 42
+    min = 100
+    max = 0
+    words = []
+    sample = ''
+    for line in f:
+        words = words + line.split(' ')
+        while words:
+            if words[0] == '' or words[0] == '\n' :
+                words.pop(0)
+                continue
+            sample +=words.pop(0)+' '
+            sample = ''.join(sample.splitlines())
+            if len(sample)>min_length:
+                sample = sample.strip()
+                if len(sample)>max_length:
+                    sample = sample[:max_length]
+                o.write(f'ID{id}\n')
+                o.write(sample+'\n')
+                o.write(sample+'\n')
+                if len(sample)>max:max = len(sample)
+                if len(sample)<min:min = len(sample)
+                sample = ''
+                id +=1
+        if id > 2_100_000:
+            print(min)
+            print(max)
+            break
+    f.close()
+    o.close()
+
 
 
 #=====these are outdated functions, keep for reference=======
@@ -190,9 +270,102 @@ def new_add_typos_RF(file:str):
     f.close()
     o.close()
 
+def new_add_typos_RF_pad(file:str):
+    f = open(file, "r", encoding="UTF-8")
+    o = open(file[:-4]+'_typosRF3_CTC.txt', "w", encoding="UTF-8")
+    lines = f.readlines()
+    IDs = lines[0::3]
+    ok = lines[1::3]
+    bad = lines[2::3]
+    pad = 'Є'
+    for idx, id in enumerate(IDs):
+        o.write(id)
+        ok[idx] = list(ok[idx])
+        bad[idx] = list(bad[idx])
 
-#process_corpus('one-hot_encoding/data/example.txt')
-new_add_typos_RF('one-hot_encoding/data/scifi_all.txt')
+        #typo frquency:
+        #generate normal(5,2), round, to int, clip between 0 - 8
+        typo_count = np.clip(int(np.round(random.normal(5, 2))), 0, 8 )
+        
+        typo_index = random.randint(low=3, high=63, size=(typo_count))
+        typo_char = random.randint(low=97, high=123, size=(typo_count))
+        
+        #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete
+        typo_type = random.choice(3, typo_count)
+        #typo_type.sort()
+        #typo_type = typo_type[::-1]#deleting first loses less information from end of samples
+
+        for i in range(typo_count):
+            if bad[idx][typo_index[i]] == pad: typo_index[i] = random.randint(low=3, high=37)
+            if typo_type[i] == 0:#swap
+                bad[idx][typo_index[i]] = chr(typo_char[i])
+            if typo_type[i] == 1:#insert
+                bad[idx].insert(typo_index[i], chr(typo_char[i]))
+                #if using insert with no CTC, uncomment these 2 lines
+                #ok[idx].insert(typo_index[i], '#')
+                #ok[idx].pop(len(ok[idx])-2)
+                bad[idx].pop(len(bad[idx])-2)#keeps bad the same and original length
+            if typo_type[i] == 2:#delete (only use with CTC models)
+                bad[idx].pop(typo_index[i])
+                bad[idx].insert(len(bad[idx])-1, pad)#keeps bad the same and original length
+        o.write(''.join(ok[idx]))
+        o.write(''.join(bad[idx]))
+    f.close()
+    o.close()
+
+def pad(file:str):
+    f = open(file, "r", encoding="UTF-8")
+    o = open(file[:-4]+'_pad2.txt', "w", encoding="UTF-8")
+    lines = f.readlines()
+    IDs = lines[0::3]
+    ok = lines[1::3]
+    bad = lines[2::3]
+    pad = 'Є'
+    padding = list(pad*40)
+    padding_start = list(pad*3)
+    for idx, id in enumerate(IDs):
+        o.write(id)
+        ok[idx] = list(ok[idx][:-1])
+        bad[idx] = list(bad[idx][:-1])
+        ok[idx] = ok[idx] + padding
+        bad[idx] = bad[idx] + padding
+        
+        #o.write(''.join(ok[idx]))
+        o.write(''.join(ok[idx][:60])+'\n')
+        o.write(''.join(padding_start + bad[idx][:70])+'\n')
+    f.close()
+    o.close()
+
+def filter_non_alpha(file:str):
+    f = open(file, "r", encoding="UTF-8")
+    o = open(file[:-4]+'_only_alpha.txt', "w", encoding="UTF-8")
+    blank = 'ѧ'
+    pad = 'Є'
+    unknown = 'є'
+        
+    charlist_extra_ctc = [blank, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+         'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r','s', 't', 'u', 
+         'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '.','\'','"', '-',':',';' ,
+         '(', ')', '%','/', '—', '–', '”', '“', '+', '=', '[', ']', '’', '&', '*', '#', pad]#blank at 0, size: 90
+
+    lines = f.readlines()
+    count = 0
+    for line in lines:
+        for c in line:
+            count +=1
+            if (c in charlist_extra_ctc) and c!='#' :o.write(c)
+            elif c == '\n':o.write(c)
+            if count > 10000 and c == ' ':
+                o.write('\n')
+                count = 0
+    f.close()
+    o.close()
+
+new_add_typos_RF_pad('one-hot_encoding/data_pad/scifi_RLOAWP2_2M.txt')
+#process_corpus('one-hot_encoding/data_pad/wikipedia_fil_only_alpha.txt')#new_add_typos_RF_pad('one-hot_encoding/data_pad/wiki_RLOAWP_2M.txt')
+#process_corpus_split_by_word('one-hot_encoding/data_pad/internet_archive_scifi_v3_only_alpha.txt')
+#pad('one-hot_encoding/data_pad/scifi_RLOAW_2M.txt')
+#filter_non_alpha('one-hot_encoding/data_pad/internet_archive_scifi_v3.txt')
 
 
 

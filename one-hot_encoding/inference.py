@@ -11,10 +11,10 @@ import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mode', type=str, default='detection')
-    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ConvLSTMDetection4/ConvLSTMDetection4.pt')
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/scifi_test_test_1k_typos_2M.txt')
-    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMDetection4.txt')
+    parser.add_argument('-mode', type=str, default='ctc')
+    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ConvLSTMCorrectionCTC_Bigger_3_wiki/ConvLSTMCorrectionCTC_Bigger_3_wiki.pt')
+    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/wiki_test_test_1k_typos_CTC.txt')
+    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTC_Bigger_3_wiki.txt')
     return parser.parse_args()
 
 args = parseargs()

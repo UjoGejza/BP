@@ -11,8 +11,8 @@ import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mode', type=str, default='detection')
-    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMDetection4.txt')
+    parser.add_argument('-mode', type=str, default='ctc')
+    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTC_Bigger_3_wiki.txt')
     return parser.parse_args()
 
 args = parseargs()

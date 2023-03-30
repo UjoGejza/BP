@@ -19,7 +19,7 @@ batch_size = 50
 epochs = 5
 learning_rate = 0.001
 
-training_data = MyDataset('one-hot_encoding/data/wiki-20k.txt')
+training_data = MyDataset('one-hot_encoding/data/examplerandom_length.txt')
 training_data_loader = DataLoader(training_data, batch_size=batch_size, shuffle = False)
 
 alphabet = training_data.charlist_extra_ctc

@@ -23,7 +23,7 @@ class MyDataset(Dataset):
          'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?', ',', '.','\'','"', '-',':',';' ,
          '(', ')', '%','/', '—', '–', '”', '“', '+', '=', '§', '[', ']', '’', '&', '*', '#']#blank at 0, size: 90
 
-        alphabet = self.charlist_extra_ctc
+        alphabet = self.charlist_extra
 
         with open(file, "r", encoding="utf-8") as f: #0x92 is a smart quote(’) of Windows-1252. It simply doesn't exist in unicode, therefore it can't be decoded.
             lines = f.readlines()
@@ -92,6 +92,4 @@ class MyDataset(Dataset):
                 'ok_text': self.ok_text[idx],
                 'bad_text': self.bad_text[idx],
                 'label': self.labels[idx]}
-
-
 
