@@ -5,16 +5,16 @@ import argparse
 
 from numpy import random
 
-from dataset import MyDataset
-from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger
+from dataset_pad import MyDataset
+from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger, ConvLSTMCorrectionCTCBiggerPad
 import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mode', type=str, default='ctc')
-    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ConvLSTMCorrectionCTC_Bigger_3_wiki/ConvLSTMCorrectionCTC_Bigger_3_wiki.pt')
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/wiki_test_test_1k_typos_CTC.txt')
-    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTC_Bigger_3_wiki.txt')
+    parser.add_argument('-mode', type=str, default='ctc_pad')#dont forget to import the right MyDataset
+    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ctc_pad/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.pt')
+    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data_pad/scifi_RLOAWP2_test_1k_typosRF3_CTC.txt')
+    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -36,8 +36,8 @@ def correction(data_loader):
     model.eval()
     #for name, param in model.state_dict().items():
     #    print(name, param.size())
-    alphabet = test_data.charlist_base
-    
+    alphabet = test_data.charlist_extra
+
     for item in data_loader:
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
@@ -96,6 +96,44 @@ def CTC(data_loader):
         except:
             print('error printing example - prob encoding')
 
+def CTC_pad(data_loader):
+    pad = 'Є'
+    blank = 'ѧ'
+    model = ConvLSTMCorrectionCTCBiggerPad()
+    model = torch.load(model_file)
+    model.to(device)
+    model.eval()
+    #for name, param in model.state_dict().items():
+    #    print(name, param.size())
+    alphabet = test_data.charlist_extra_ctc
+
+    for item in data_loader:
+        item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
+        item['bad_sample_one_hot'] = item['bad_sample_one_hot'].to(device)
+        #item['ok_sample'] = item['ok_sample'].to(device)
+        outputs = model(item['bad_sample_one_hot'])
+        outputs = outputs[0]
+        pred = torch.squeeze(torch.topk(outputs, 1, dim=0, sorted=False).indices)
+        output_list = list(pred)
+
+        #remove all chains of the same character longer than 1 (aa -> a)
+        trimmed_output_list_str = []
+        for out in output_list:
+            if len(trimmed_output_list_str) == 0 or alphabet.index(trimmed_output_list_str[-1]) != out:
+                trimmed_output_list_str.append(alphabet[out])
+
+        #remove "blank" (~) 
+        trimmed_output_list_txt_no_blank = [x for x in trimmed_output_list_str if x!= blank]
+        final_str = ''.join(trimmed_output_list_txt_no_blank)
+   
+        try:
+            f.write(str(item['id'].item())+'\n')#id
+            f.write(item['ok_text'][0][:item['ok_sample_index']]+'\n')#ground truth
+            f.write(item['bad_text'][0][3:item['bad_text'][0].find(pad, 35)]+'\n')#input
+            f.write(final_str+'\n')#output
+        except:
+            print('error printing example - prob encoding')
+
 def detection(data_loader):
     model = ConvLSTMDetection()
     model = torch.load(model_file)
@@ -129,5 +167,7 @@ with open(output_file, "w", encoding="UTF-8", errors='ignore') as f:
         correction(test_data_loader)
     if mode == 'ctc' or mode == 'CTC':
         CTC(test_data_loader)
+    if mode == 'ctc_pad' or mode == 'CTC_pad':
+        CTC_pad(test_data_loader)
     if mode == 'detection':
         detection(test_data_loader)

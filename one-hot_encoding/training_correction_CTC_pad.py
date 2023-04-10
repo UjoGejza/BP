@@ -8,22 +8,22 @@ import numpy as np
 from numpy import random
 
 from dataset_pad import MyDataset
-from models import ConvLSTMCorrectionCTCBiggerPad
+from models import UNetCorrectionCTCBiggerPad
 import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-bs', type=int, default=50)
     parser.add_argument('-mi', type=int, default=600_000)
-    parser.add_argument('-lr', type=float, default=0.001)
-    parser.add_argument('-lr_scale', type=float, default=0.9)
-    parser.add_argument('-lr_scaleiter', type=int, default=10_000)
+    parser.add_argument('-lr', type=float, default=0.01)
+    parser.add_argument('-lr_scale', type=float, default=0.5)
+    parser.add_argument('-lr_scaleiter', type=int, default=200)
     parser.add_argument('-online', type=int, default=1)
     parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrectionCTC.pt')
-    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP_20k.txt')
-    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP_train_1k_typosRF3_CTC.txt')
-    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP_test_1k_typosRF3_CTC.txt')
+    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_20k.txt')
+    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_train_1k_typosRF3_CTC.txt')
+    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_test_1k_typosRF3_CTC.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -57,17 +57,17 @@ alphabet = training_data.charlist_extra_ctc
 
 channels = len(alphabet)
 
-model = ConvLSTMCorrectionCTCBiggerPad()
-print('model class: ConvLSTMCorrectionCTCBigger')
+model = UNetCorrectionCTCBiggerPad()
+print('model class: UNetCorrectionCTCBigger')
 if load_model !='_': model = torch.load(load_model)
 model.to(device)
 model.train()
 loss_fn = nn.CTCLoss(zero_infinity=True)
 
-sample_length = 73
+sample_length = 70
 
-input_lengths = torch.full(size=(batch_size, ), fill_value=75, dtype=torch.long)
-target_lengths = torch.full(size=(batch_size, ), fill_value=63, dtype=torch.long)
+input_lengths = torch.full(size=(batch_size, ), fill_value=sample_length+10, dtype=torch.long)
+target_lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
 
 print(f'MODEL ARCHITECTURE: ')
 for name, param in model.state_dict().items():
@@ -101,7 +101,7 @@ def new_add_typos_RF(item):
         bad_text = list(item['bad_text'][batch_i])
         for i in range(typo_count[batch_i]):
             typo_i +=1
-            if bad_text[typo_index[typo_i]] == pad: typo_index[typo_i] = random.randint(low=3, high=32)
+            if bad_text[typo_index[typo_i]] == pad: typo_index[typo_i] = random.randint(low=3, high=35)
             if typo_type[i] == 0:
                 #swap char for another char
                 #bad_text = list(item['bad_text'][batch_i])
@@ -178,7 +178,7 @@ def train():
                 print(f'Iteration {iteration}/{max_iterations}, loss = {loss.item():.4f}, lr = {optimizer.param_groups[0][lr]:.8f}')             
             if iteration%learning_rate_scale_iter == 0:
                 optimizer.param_groups[0]['lr'] *= learning_rate_scale
-            if iteration%500 == 0:
+            if iteration%1000 == 0:
                 model.eval()
                 with torch.no_grad():
                     print('Train data test:')
@@ -218,8 +218,8 @@ def test(data_loader):
         trimmed_output_list_txt_no_blank = [x for x in trimmed_output_list_str if x!= blank]
         final_str = ''.join(trimmed_output_list_txt_no_blank)
 
-        edit_distance = Levenshtein.distance(final_str, item['ok_text'][0][:item['ok_sample_index']+1])
-        indel_ratio = Levenshtein.ratio(final_str, item['ok_text'][0])
+        edit_distance = Levenshtein.distance(final_str, item['ok_text'][0][:item['ok_sample_index']])
+        indel_ratio = Levenshtein.ratio(final_str, item['ok_text'][0][:item['ok_sample_index']])
         sum_distance += edit_distance
         sum_ratio += indel_ratio
 
@@ -233,7 +233,7 @@ def test(data_loader):
             try:
               print(f'ID: {item[id][0]}')
               print(item['ok_text'][0][:item['ok_sample_index']])
-              print(item['bad_text'][0])
+              print(item['bad_text'][0][:item['bad_text'][0].find(pad, 35)])
               #ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
               print(raw_output_str)
               print(final_str)

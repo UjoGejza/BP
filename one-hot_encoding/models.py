@@ -638,5 +638,179 @@ class ConvLSTMCorrectionCTCBiggerPad(nn.Module):
         x,_ = self.rec(x)
         x = x.permute(1, 2, 0)
         return self.conv2(x)
+    
+class ConvLSTMCorrectionCTCBiggerPad2x(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(90, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.ConvTranspose1d(512, 90, 2, stride=2),
+                    nn.BatchNorm1d(90),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
+class ConvLSTMCorrectionCTCBiggerPad2x2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(90, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.ConvTranspose1d(512, 256, 2, stride=2),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 256, 9,  padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 90, 5, padding=2),
+                    nn.BatchNorm1d(90),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+
+class ConvLSTMCorrectionCTCBiggerPad2x3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(90, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU()]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.ConvTranspose1d(512, 256, 9, padding=2),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 256, 9,  padding=2),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 128, 9, padding=2),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 128, 9, padding=2),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 90, 5, padding=2),
+                    nn.BatchNorm1d(90),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
+class UNetCorrectionCTCBiggerPad(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = [nn.Conv1d(90, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.MaxPool1d(2, 2),
+                    nn.Conv1d(128, 256, 9, padding=3),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=4),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.MaxPool1d(2, 2),
+                    nn.Conv1d(256, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(512, 512, 9, padding=4),
+                    nn.BatchNorm1d(512),
+                    nn.LeakyReLU(),]
+        self.conv1 = nn.Sequential(*self.conv1)
+        self.rec = nn.LSTM(512, 256, 4, bidirectional=True)
+        self.conv2 = [nn.Conv1d(512, 256, 9, padding=5),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(256, 256, 9, padding=5),
+                    nn.BatchNorm1d(256),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(256, 256, 2, 2),
+                    nn.Conv1d(256, 128, 9, padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.Conv1d(128, 128, 9,  padding=4),
+                    nn.BatchNorm1d(128),
+                    nn.LeakyReLU(),
+                    nn.ConvTranspose1d(128, 128, 2, 2),
+                    nn.Conv1d(128, 90, 9, padding=4),
+                    nn.BatchNorm1d(90),
+                    nn.LeakyReLU()]
+        self.conv2 = nn.Sequential(*self.conv2)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.permute(2, 0, 1)
+        x,_ = self.rec(x)
+        x = x.permute(1, 2, 0)
+        return self.conv2(x)
+    
+
+
 
 #---------------------------------------------

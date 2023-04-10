@@ -1,18 +1,12 @@
 import torch
-from torch import nn
-from torch.utils.data import DataLoader
 import argparse
 import Levenshtein
-from numpy import random
 
-from dataset import MyDataset
-from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger
-import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='ctc')
-    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTC_Bigger_3_wiki.txt')
+    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -141,9 +135,47 @@ def eval_detection():
     print(f'Corrected typos: {TNR*100:.2f}%')
     print(f'Absolute acc (corrected/(all+created)): {ABS*100:.2f}%')
 
+def eval_file():
+    f = open(file, "r", encoding="UTF-8")
+    lines = f.readlines()
+    IDs = lines[0::3]
+    ground_truths = lines[1::3]
+    inputs = lines[2::3]
+
+    f.close()
+    
+    correct_chars = 0
+    all_chars= 0
+    all_typos = 0
+    #created_typos = 0
+    sum_ratio = 0
+    sample_length_sum = 0
+    pad = 'Є'
+
+    for sample_i,_ in enumerate(IDs):
+        input = inputs[sample_i][3:inputs[sample_i].find(pad, 30)]
+        gt = ground_truths[sample_i][:ground_truths[sample_i].find(pad, 30)]
+        edit_distance_input = Levenshtein.distance(input, gt)
+        all_typos += edit_distance_input
+        sample_length_sum += len(input)
+        indel_ratio = Levenshtein.ratio(input, gt)
+        sum_ratio += indel_ratio
+        all_chars += len(input)
+        correct_chars += (len(input) - edit_distance_input)
+        
+    acc = correct_chars/all_chars
+    print(f'Samples: {len(IDs)}')
+    print(f'Average sample length: {sample_length_sum/len(IDs):.2f}')
+    print(f'Accuracy: {acc*100:.2f}%, correct/bad: {correct_chars}/{all_chars}')
+    print(f'Typos: {all_typos}')
+    print(f'Average edit distance (typos per sample): {all_typos/len(IDs):.2f}')
+    print(f'Average indel similarity: {sum_ratio/len(IDs):.4f}') #1 - normalized_distance
+
 if mode == 'correction':
     eval_correction()
 if mode == 'ctc' or mode == 'CTC':
     eval_CTC()
 if mode == 'detection':
     eval_detection()
+if mode == 'file':
+    eval_file()

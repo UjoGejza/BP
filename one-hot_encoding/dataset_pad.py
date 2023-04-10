@@ -21,7 +21,7 @@ class MyDataset(Dataset):
         sample_count = len(lines)//3
         #sample_size = len(lines[1])-1#ignore '\n'?
         ok_sample_size = 60
-        bad_sample_size = 73
+        bad_sample_size = 70
         channels = len(alphabet)
         
         self.IDs = torch.zeros(sample_count)
