@@ -8,22 +8,22 @@ import numpy as np
 from numpy import random
 
 from dataset_pad import MyDataset
-from models import UNetCorrectionCTCBiggerPad
+from models import ConvLSTMCorrectionCTCBiggerPad2x
 import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-bs', type=int, default=50)
     parser.add_argument('-mi', type=int, default=600_000)
-    parser.add_argument('-lr', type=float, default=0.01)
-    parser.add_argument('-lr_scale', type=float, default=0.5)
-    parser.add_argument('-lr_scaleiter', type=int, default=200)
+    parser.add_argument('-lr', type=float, default=0.001)
+    parser.add_argument('-lr_scale', type=float, default=0.9)
+    parser.add_argument('-lr_scaleiter', type=int, default=1000)
     parser.add_argument('-online', type=int, default=1)
     parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrectionCTC.pt')
-    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_20k.txt')
-    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_train_1k_typosRF3_CTC.txt')
-    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP1_test_1k_typosRF3_CTC.txt')
+    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_20k.txt')
+    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_train_1k_typosRF3_CTC.txt')
+    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_test_1k_typosRF3_CTC.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -57,16 +57,16 @@ alphabet = training_data.charlist_extra_ctc
 
 channels = len(alphabet)
 
-model = UNetCorrectionCTCBiggerPad()
+model = ConvLSTMCorrectionCTCBiggerPad2x()
 print('model class: UNetCorrectionCTCBigger')
 if load_model !='_': model = torch.load(load_model)
 model.to(device)
 model.train()
 loss_fn = nn.CTCLoss(zero_infinity=True)
 
-sample_length = 70
+sample_length = 73
 
-input_lengths = torch.full(size=(batch_size, ), fill_value=sample_length+10, dtype=torch.long)
+input_lengths = torch.full(size=(batch_size, ), fill_value=sample_length*2, dtype=torch.long)
 target_lengths = torch.full(size=(batch_size, ), fill_value=60, dtype=torch.long)
 
 print(f'MODEL ARCHITECTURE: ')

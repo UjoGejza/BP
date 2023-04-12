@@ -6,15 +6,15 @@ import argparse
 from numpy import random
 
 from dataset_pad import MyDataset
-from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger, ConvLSTMCorrectionCTCBiggerPad
+from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger, ConvLSTMCorrectionCTCBiggerPad, UNetCorrectionCTCBiggerPad
 import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='ctc_pad')#dont forget to import the right MyDataset
-    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ctc_pad/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.pt')
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data_pad/scifi_RLOAWP2_test_1k_typosRF3_CTC.txt')
-    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.txt')
+    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ctc_pad/UNetCorrectionCTCBiggerPad1RF_2scifi/UNetCorrectionCTCBiggerPad1RF_2scifi.pt')
+    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data_pad/scifi_RLOAWP1_test_1k_typosRF3_CTC.txt')
+    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/UNetCorrectionCTCBiggerPad1RF_2scifi.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -99,7 +99,7 @@ def CTC(data_loader):
 def CTC_pad(data_loader):
     pad = 'Є'
     blank = 'ѧ'
-    model = ConvLSTMCorrectionCTCBiggerPad()
+    model = UNetCorrectionCTCBiggerPad()
     model = torch.load(model_file)
     model.to(device)
     model.eval()
@@ -129,7 +129,7 @@ def CTC_pad(data_loader):
         try:
             f.write(str(item['id'].item())+'\n')#id
             f.write(item['ok_text'][0][:item['ok_sample_index']]+'\n')#ground truth
-            f.write(item['bad_text'][0][3:item['bad_text'][0].find(pad, 35)]+'\n')#input
+            f.write(item['bad_text'][0][:item['bad_text'][0].find(pad, 33)]+'\n')#input
             f.write(final_str+'\n')#output
         except:
             print('error printing example - prob encoding')

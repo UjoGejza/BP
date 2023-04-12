@@ -6,7 +6,7 @@ import Levenshtein
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='ctc')
-    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBiggerPad2RF_offline_2scifi.txt')
+    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/UNetCorrectionCTCBiggerPad1RF_2scifi.txt')
     return parser.parse_args()
 
 args = parseargs()
