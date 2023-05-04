@@ -6,15 +6,15 @@ import argparse
 from numpy import random
 
 from dataset_pad import MyDataset
-from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger, ConvLSTMCorrectionCTCBiggerPad, UNetCorrectionCTCBiggerPad
+from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrectionCTC, ConvLSTMCorrectionCTCBigger, ConvLSTMDetection, ConvLSTMDetectionBigger, ConvLSTMCorrectionCTCBiggerPad, UNetCorrectionCTCBiggerPad, ConvLSTMCorrectionCTCBiggerPad2x
 import ansi_print
 
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='ctc_pad')#dont forget to import the right MyDataset
-    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ctc_pad/UNetCorrectionCTCBiggerPad1RF_2scifi/UNetCorrectionCTCBiggerPad1RF_2scifi.pt')
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data_pad/scifi_RLOAWP1_test_1k_typosRF3_CTC.txt')
-    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/UNetCorrectionCTCBiggerPad1RF_2scifi.txt')
+    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/news/ConvLSTMCorrectionCTCBiggerPad2RF(6,2)_news_3/ConvLSTMCorrectionCTCBiggerPad2RF(6,2)_news_3.pt')
+    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data_news/news_test_RLOAWP2_2k_typosRF(6,2)_CTC.txt')
+    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBiggerPad2RF(6,2)_news_3_raw.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -36,7 +36,7 @@ def correction(data_loader):
     model.eval()
     #for name, param in model.state_dict().items():
     #    print(name, param.size())
-    alphabet = test_data.charlist_extra
+    alphabet = test_data.charlist_base
 
     for item in data_loader:
         item['bad_sample_one_hot'] = item['bad_sample_one_hot'].transpose(1, 2)
@@ -61,7 +61,7 @@ def correction(data_loader):
             print('error printing example - prob encoding')
 
 def CTC(data_loader):
-    model = ConvLSTMCorrectionCTCBigger()
+    model = ConvLSTMCorrectionCTC()
     model = torch.load(model_file)
     model.to(device)
     model.eval()
@@ -99,7 +99,7 @@ def CTC(data_loader):
 def CTC_pad(data_loader):
     pad = 'Є'
     blank = 'ѧ'
-    model = UNetCorrectionCTCBiggerPad()
+    model = ConvLSTMCorrectionCTCBigger()
     model = torch.load(model_file)
     model.to(device)
     model.eval()
@@ -118,18 +118,21 @@ def CTC_pad(data_loader):
 
         #remove all chains of the same character longer than 1 (aa -> a)
         trimmed_output_list_str = []
+        raw_output = []
         for out in output_list:
+            raw_output.append(alphabet[out])
             if len(trimmed_output_list_str) == 0 or alphabet.index(trimmed_output_list_str[-1]) != out:
                 trimmed_output_list_str.append(alphabet[out])
 
         #remove "blank" (~) 
         trimmed_output_list_txt_no_blank = [x for x in trimmed_output_list_str if x!= blank]
         final_str = ''.join(trimmed_output_list_txt_no_blank)
-   
+        raw_output_str = ''.join(raw_output)
         try:
             f.write(str(item['id'].item())+'\n')#id
             f.write(item['ok_text'][0][:item['ok_sample_index']]+'\n')#ground truth
-            f.write(item['bad_text'][0][:item['bad_text'][0].find(pad, 33)]+'\n')#input
+            f.write(item['bad_text'][0][3:item['bad_text'][0].find(pad, 33)]+'\n')#input
+            f.write(raw_output_str+'\n')
             f.write(final_str+'\n')#output
         except:
             print('error printing example - prob encoding')
@@ -153,12 +156,12 @@ def detection(data_loader):
         outputs = [1 if out>0.6 else 0 for out in outputs]
 
         f.write(str(item['id'].item())+'\n')#id
-        f.write(item['ok_text'][0]+'\n')
-        f.write(item['bad_text'][0]+'\n')#input
+        f.write('GT text:    '+item['ok_text'][0]+'\n')
+        f.write('IN text:    '+item['bad_text'][0]+'\n')#input
         label = ['1' if l == 1 else '0' for l in item['label']]
         out = ['1' if o == 1 else '0' for o in outputs]
-        f.write(''.join(label)+'\n')#ground truth
-        f.write(''.join(out)+'\n')#output
+        f.write('GT:         '+''.join(label)+'\n')#ground truth
+        f.write('prediction: '+''.join(out)+'\n')#output
 
 
  

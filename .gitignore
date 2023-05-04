@@ -9,7 +9,8 @@
 /.vscode
 /one-hot_encoding/data
 /one-hot_encoding/data_pad
+/one-hot_encoding/data_news
 /wandb
 /one-hot_encoding/results
-
 FIT_BUT_thesis_template_2022.pdf
+diagramy

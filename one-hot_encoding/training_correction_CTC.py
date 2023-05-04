@@ -19,6 +19,8 @@ def parseargs():
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
     parser.add_argument('-online', type=int, default=1)
+    parser.add_argument('-centre', type=int, default=6)
+    parser.add_argument('-spread', type=int, default=2)
     parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrectionCTC.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
@@ -39,6 +41,8 @@ learning_rate = args.lr
 learning_rate_scale = args.lr_scale
 learning_rate_scale_iter = args.lr_scaleiter
 online = args.online
+centre = args.centre
+spread = args.spread
 load_model = args.load_model
 save_model = args.save_model
 train_file = args.train_file
@@ -84,7 +88,7 @@ id = 'id'
 def add_typos_old(item):#old
     error_index = random.randint(50, size=(4*50))
     error_char = random.randint(low=97, high=123, size=(4*50))
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*50):
         if (i%4)<3:
@@ -95,12 +99,12 @@ def add_typos_old(item):#old
             item['bad_text'][i//4] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//4][error_index[i]]:
                 #item['label'][i//4][error_index[i]] = 0
-                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(69)#training_data.channels
+                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(channels)#training_data.channels
                 item['bad_sample_one_hot'][i//4][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
                 #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
         else:
             #insert extra char
-            base_one_hot = torch.zeros(1, 69)
+            base_one_hot = torch.zeros(1, channels)
             base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//4])
             ok_text = list(item['ok_text'][i//4])
@@ -136,7 +140,7 @@ def add_typos_old_2(item):#old
     base_one_hot = torch.zeros(1, channels)
     base_one_hot_space =base_one_hot.detach().clone()
     base_one_hot_space[0][alphabet.index(' ')] = 1
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(5*batch_size):
         if (i%5)<3:
@@ -190,14 +194,14 @@ def add_typos_old_2(item):#old
     return item
 
 def new_add_typos_RF(item):
-    typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )
+    typo_count = np.clip(np.round(random.normal(centre, spread, batch_size)).astype(int), 0, 8 )
     typo_index = random.randint(50, size=(10*batch_size))
     typo_char = random.randint(low=97, high=123, size=(10*batch_size))
     base_one_hot = torch.zeros(1, 90)
     base_one_hot_space =base_one_hot.detach().clone()
     base_one_hot_space[0][alphabet.index(' ')] = 1
     typo_i = 0
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for batch_i in range(batch_size):
         #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete

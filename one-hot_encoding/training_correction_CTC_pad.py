@@ -8,7 +8,7 @@ import numpy as np
 from numpy import random
 
 from dataset_pad import MyDataset
-from models import ConvLSTMCorrectionCTCBiggerPad2x
+from models import ConvLSTMCorrectionCTC
 import ansi_print
 
 def parseargs():
@@ -19,6 +19,8 @@ def parseargs():
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=1000)
     parser.add_argument('-online', type=int, default=1)
+    parser.add_argument('-centre', type=int, default=6)
+    parser.add_argument('-spread', type=int, default=2)
     parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrectionCTC.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_20k.txt')
@@ -39,6 +41,8 @@ learning_rate = args.lr
 learning_rate_scale = args.lr_scale
 learning_rate_scale_iter = args.lr_scaleiter
 online = args.online
+centre = args.centre
+spread = args.spread
 load_model = args.load_model
 save_model = args.save_model
 train_file = args.train_file
@@ -57,8 +61,8 @@ alphabet = training_data.charlist_extra_ctc
 
 channels = len(alphabet)
 
-model = ConvLSTMCorrectionCTCBiggerPad2x()
-print('model class: UNetCorrectionCTCBigger')
+model = ConvLSTMCorrectionCTC()
+print('model class: UNetCorrectionCTC')
 if load_model !='_': model = torch.load(load_model)
 model.to(device)
 model.train()
@@ -84,14 +88,14 @@ pad = 'Є'
 unknown = 'є'
 
 def new_add_typos_RF(item):
-    typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )
+    typo_count = np.clip(np.round(random.normal(centre, spread, batch_size)).astype(int), 0, 8 )
     typo_index = random.randint(low=3, high=63, size=(10*batch_size))
     typo_char = random.randint(low=97, high=123, size=(10*batch_size))
     base_one_hot = torch.zeros(1, 90)
     base_one_hot_pad =base_one_hot.detach().clone()
     base_one_hot_pad[0][alphabet.index(pad)] = 1
     typo_i = 0
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for batch_i in range(batch_size):
         #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete
@@ -101,7 +105,7 @@ def new_add_typos_RF(item):
         bad_text = list(item['bad_text'][batch_i])
         for i in range(typo_count[batch_i]):
             typo_i +=1
-            if bad_text[typo_index[typo_i]] == pad: typo_index[typo_i] = random.randint(low=3, high=35)
+            if bad_text[typo_index[typo_i]] == pad: typo_index[typo_i] = random.randint(low=3, high=42)
             if typo_type[i] == 0:
                 #swap char for another char
                 #bad_text = list(item['bad_text'][batch_i])
@@ -226,23 +230,25 @@ def test(data_loader):
         if i>data_loader.__len__()-6:
             raw_output = []
             for e in output_list:
-                raw_output.append(alphabet[e])
+                c = alphabet[e]
+                if c == blank or c == pad: c = '='
+                raw_output.append(c)
             raw_output_str = ''.join(raw_output)
             
             
             try:
               print(f'ID: {item[id][0]}')
-              print(item['ok_text'][0][:item['ok_sample_index']])
-              print(item['bad_text'][0][:item['bad_text'][0].find(pad, 35)])
-              #ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
-              print(raw_output_str)
-              print(final_str)
+              print('GT :',item['ok_text'][0][:item['ok_sample_index']])
+              print('BAD:',item['bad_text'][0][3:item['bad_text'][0].find(pad, 35)])
+              print('OUT:',final_str)
               ansi_print.a_print(final_str, item['ok_text'][0], green, red )
+              #ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
+              print('RAW:',raw_output_str)
               #print(f'edit distance: {edit_distance}')
             except:
               print('error printing example - prob encoding')
 
-    print(f'Average edit distance: {ansi_print.colors[green]}{sum_distance/1000:.2f}{ansi_print.colors[white]}')
-    print(f'Average indel similarity: {ansi_print.colors[green]}{sum_ratio/1000:.4f}{ansi_print.colors[white]}') #1 - normalized_distance
+    print(f'Average edit distance: {ansi_print.colors[green]}{sum_distance/2000:.2f}{ansi_print.colors[white]}')
+    print(f'Average indel similarity: {ansi_print.colors[green]}{sum_ratio/2000:.4f}{ansi_print.colors[white]}') #1 - normalized_distance
 
 train()

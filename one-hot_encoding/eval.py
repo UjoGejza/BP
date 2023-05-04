@@ -6,7 +6,7 @@ import Levenshtein
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='ctc')
-    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/UNetCorrectionCTCBiggerPad1RF_2scifi.txt')
+    parser.add_argument('-file', type=str, default='one-hot_encoding/eval/ConvLSTMCorrectionCTCBigger2xPad2RF(6,2)_news_3.txt')
     return parser.parse_args()
 
 args = parseargs()
@@ -87,7 +87,7 @@ def eval_CTC():
         
     acc = correct/all
     #acc_corrected = corrected_typos/all_typos
-    acc_abs = fixes/(all_typos)
+    acc_abs = fixes/(all_typos)#(IvG-PvG)/IvG
     print(f'Accuracy: {acc*100:.2f}%')
     print(f'Fixed: {fixes}/{all}')
     print(f'Corrected typos: _____ / _____, _____%')

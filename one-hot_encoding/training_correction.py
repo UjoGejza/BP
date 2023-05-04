@@ -18,6 +18,8 @@ def parseargs():
     parser.add_argument('-lr_scale', type=float, default=0.9)
     parser.add_argument('-lr_scaleiter', type=int, default=10_000)
     parser.add_argument('-online', type=int, default=1)
+    parser.add_argument('-centre', type=int, default=6)
+    parser.add_argument('-spread', type=int, default=2)
     parser.add_argument('-load_model', type=str, default='_')
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrection.pt')
     parser.add_argument('-train_file', type=str, default='one-hot_encoding/data/wiki-20k.txt')
@@ -38,6 +40,8 @@ learning_rate = args.lr
 learning_rate_scale = args.lr_scale
 learning_rate_scale_iter = args.lr_scaleiter
 online = args.online
+centre = args.centre
+spread = args.spread
 load_model = args.load_model
 save_model = args.save_model
 train_file = args.train_file
@@ -54,6 +58,7 @@ testing_train_data_loader = DataLoader(testing_train_data, shuffle=True)
 
 alphabet = training_data.charlist_base
 
+channels = len(alphabet)
 model = ConvLSTMCorrectionBigger()
 print('model class: ConvLSTMCorrectionBigger')
 if load_model !='_': model = torch.load(load_model)
@@ -75,7 +80,7 @@ id = 'id'
 def add_typos(item):
     error_index = random.randint(50, size=(4*50))
     error_char = random.randint(low=97, high=123, size=(4*50))
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for i in range(4*50):
         if (i%4)<3:
@@ -86,12 +91,12 @@ def add_typos(item):
             item['bad_text'][i//4] = ''.join(bad_text)
             if chr(error_char[i]) != item['ok_text'][i//4][error_index[i]]:
                 #item['label'][i//4][error_index[i]] = 0
-                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(69)#training_data.channels
+                item['bad_sample_one_hot'][i//4][error_index[i]] = torch.zeros(channels)#training_data.channels
                 item['bad_sample_one_hot'][i//4][error_index[i]][alphabet.index(chr(error_char[i]))] = 1
                 #item['bad_sample'][i_batch][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
         else:
             #insert extra char
-            base_one_hot = torch.zeros(1, 69)
+            base_one_hot = torch.zeros(1, channels)
             base_one_hot[0][alphabet.index(chr(error_char[i]))] = 1
             bad_text = list(item['bad_text'][i//4])
             ok_text = list(item['ok_text'][i//4])
@@ -122,10 +127,10 @@ def add_typos(item):
     return item
 
 def new_add_typos_RF(item):
-    typo_count = np.clip(np.round(random.normal(5, 2, batch_size)).astype(int), 0, 8 )#set typo frequency
+    typo_count = np.clip(np.round(random.normal(centre, spread, batch_size)).astype(int), 0, 8 )#set typo frequency
     typo_index = random.randint(50, size=(10*batch_size))
     typo_char = random.randint(low=97, high=123, size=(10*batch_size))
-    base_one_hot = torch.zeros(1, 69)
+    base_one_hot = torch.zeros(1, channels)
     base_one_hot_space =base_one_hot.detach().clone()
     base_one_hot_space[0][alphabet.index(' ')] = 1
     typo_i = 0
@@ -133,7 +138,7 @@ def new_add_typos_RF(item):
     #print(item['bad_sample'][[0, 0, 0, 1, 2], [2, 1, 0, 0, 0]])
     #item['bad_sample'][[0, 0, 0, 1, 2], [2, 1, 0, 0, 0]] = torch.tensor([501, 502, 503, 504, 505], dtype=torch.float)
     #print(item['bad_sample'][[0, 1, 2]])
-    #extra_char_one_hot = torch.zeros(1, 69)
+    #extra_char_one_hot = torch.zeros(1, channels)
     #extra_char_one_hot[0][alphabet.index('#')] = 1
     for batch_i in range(batch_size):
         #typo type generation: 1=swap, 2=swap+insert, 3=swap+insert+delete
@@ -149,7 +154,7 @@ def new_add_typos_RF(item):
                 bad_text[typo_index[typo_i]] = chr(typo_char[typo_i])
                 item['bad_text'][batch_i] = ''.join(bad_text)
 
-                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(69)#training_data.channels
+                item['bad_sample_one_hot'][batch_i][typo_index[typo_i]] = torch.zeros(channels)#training_data.channels
                 item['bad_sample_one_hot'][batch_i][typo_index[typo_i]][alphabet.index(chr(typo_char[typo_i]))] = 1
                     #item['bad_sample'][i//4][error_index[i]] = training_data.charlist.index(chr(error_char[i]))
 
@@ -251,11 +256,14 @@ def test(data_loader):
             all +=1
 
         if i>data_loader.__len__()-6:
-            output_text = ''.join(output_text_list)
-            print(f'ID: {item[id][0]}')
-            print(item['ok_text'][0])
-            ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
-            ansi_print.a_print(output_text, item['ok_text'][0],green, red)
+            try:
+                output_text = ''.join(output_text_list)
+                print(f'ID: {item[id][0]}')
+                print(item['ok_text'][0])
+                ansi_print.a_print(item['bad_text'][0], item['ok_text'][0],white, yellow)
+                ansi_print.a_print(output_text, item['ok_text'][0],green, red)
+            except:
+                print('error printing example - prob encoding')
 
     acc = correct/all
     acc_corrected = corrected_typos/all_typos

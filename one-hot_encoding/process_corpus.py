@@ -85,10 +85,10 @@ def process_corpus_by_word(file:str):
 
 def process_corpus_split_by_word(file:str):
     f = open(file, "r", encoding="UTF-8", errors='ignore')
-    o = open(file[:-4]+'_random_length_BW_2M.txt', "w", encoding="UTF-8", errors='ignore')
-    id = 0
+    o = open(file[:-4]+'_random_length_BW.txt', "w", encoding="UTF-8", errors='ignore')
+    id = 2000000
     max_length = 60
-    min_length = 42
+    min_length = 50
     min = 100
     max = 0
     words = []
@@ -112,7 +112,7 @@ def process_corpus_split_by_word(file:str):
                 if len(sample)<min:min = len(sample)
                 sample = ''
                 id +=1
-        if id > 2_100_000:
+        if id > 2_002_001:
             print(min)
             print(max)
             break
@@ -272,7 +272,7 @@ def new_add_typos_RF(file:str):
 
 def new_add_typos_RF_pad(file:str):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_typosRF3_CTC.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'_typosRF(2,1)_CTC.txt', "w", encoding="UTF-8")
     lines = f.readlines()
     IDs = lines[0::3]
     ok = lines[1::3]
@@ -285,7 +285,7 @@ def new_add_typos_RF_pad(file:str):
 
         #typo frquency:
         #generate normal(5,2), round, to int, clip between 0 - 8
-        typo_count = np.clip(int(np.round(random.normal(5, 2))), 0, 8 )
+        typo_count = np.clip(int(np.round(random.normal(2, 1))), 0, 8 )
         
         typo_index = random.randint(low=3, high=63, size=(typo_count))
         typo_char = random.randint(low=97, high=123, size=(typo_count))
@@ -296,7 +296,7 @@ def new_add_typos_RF_pad(file:str):
         #typo_type = typo_type[::-1]#deleting first loses less information from end of samples
 
         for i in range(typo_count):
-            if bad[idx][typo_index[i]] == pad: typo_index[i] = random.randint(low=3, high=37)
+            if bad[idx][typo_index[i]] == pad: typo_index[i] = random.randint(low=3, high=42)
             if typo_type[i] == 0:#swap
                 bad[idx][typo_index[i]] = chr(typo_char[i])
             if typo_type[i] == 1:#insert
@@ -315,7 +315,7 @@ def new_add_typos_RF_pad(file:str):
 
 def pad(file:str):
     f = open(file, "r", encoding="UTF-8")
-    o = open(file[:-4]+'_pad2.txt', "w", encoding="UTF-8")
+    o = open(file[:-4]+'P2.txt', "w", encoding="UTF-8")
     lines = f.readlines()
     IDs = lines[0::3]
     ok = lines[1::3]
@@ -355,16 +355,14 @@ def filter_non_alpha(file:str):
             count +=1
             if (c in charlist_extra_ctc) and c!='#' :o.write(c)
             elif c == '\n':o.write(c)
-            if count > 10000 and c == ' ':
-                o.write('\n')
-                count = 0
     f.close()
     o.close()
 
-new_add_typos_RF_pad('one-hot_encoding/data_pad/scifi_RLOAWP2_2M.txt')
-#process_corpus('one-hot_encoding/data_pad/wikipedia_fil_only_alpha.txt')#new_add_typos_RF_pad('one-hot_encoding/data_pad/wiki_RLOAWP_2M.txt')
-#process_corpus_split_by_word('one-hot_encoding/data_pad/internet_archive_scifi_v3_only_alpha.txt')
-#pad('one-hot_encoding/data_pad/scifi_RLOAW_2M.txt')
+#filter_non_alpha('one-hot_encoding/data_news/news_test.txt')
+#process_corpus('one-hot_encoding/data_pad/wikipedia_fil_only_alpha.txt')
+new_add_typos_RF_pad('one-hot_encoding/data_news/news_test_RLOAWP2_2k.txt')
+#process_corpus_split_by_word('one-hot_encoding/data_news/news_test_only_alpha.txt')
+#pad('one-hot_encoding/data_news/news_test_RLOAW.txt')
 #filter_non_alpha('one-hot_encoding/data_pad/internet_archive_scifi_v3.txt')
 
 

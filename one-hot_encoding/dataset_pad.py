@@ -55,7 +55,8 @@ class MyDataset(Dataset):
                 #self.ok_samples_one_hot[index][i][alphabet.index(character)] = 1
             self.ok_samples[index] = torch.tensor(sample)
             #self.ok_text[index] = ''.join(sample_txt)
-            self.ok_sample_index[index] = self.ok_text[index].find(pad, 39, ok_sample_size)
+            self.ok_sample_index[index] = self.ok_text[index].find(pad, 49, ok_sample_size)
+            if self.ok_sample_index[index] == -1: self.ok_sample_index[index] = 60
 
             
             sample = [] 
