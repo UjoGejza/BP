@@ -9,8 +9,8 @@ import Levenshtein
 
 def parseargs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mode', type=str, default='file')#choose mode: correction, detection, CTC, file, basically which function will be called
-    parser.add_argument('-file', type=str, default='one-hot_encoding/data_news/news_test_RLOAWP2_2k_typosRF(6,2)_CTC.txt')#inference file to compute stats from
+    parser.add_argument('-mode', type=str, default='detection')#choose mode: correction, detection, CTC, file, basically which function will be called
+    parser.add_argument('-file', type=str, default='models/ConvLSTMDetection3/ConvLSTMDetection3.txt')#inference file to compute stats from
     return parser.parse_args()
 
 args = parseargs()

@@ -1,3 +1,6 @@
+# ansi_print.py
+# Author: Sebastián Chupáč
+# prints text based on truth, positionlly dependent 1:1, # is inserted typo printed with different color
 import torch
 
 colors = {

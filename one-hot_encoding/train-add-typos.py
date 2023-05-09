@@ -1,4 +1,6 @@
-#only for testing different online typo generating functions
+# train_add_typos.py
+# Author: Sebastián Chupáč
+# only for testing different online typo generating functions, no real use
 import torch
 from torch import nn
 from torch.utils.data import DataLoader

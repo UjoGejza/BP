@@ -17,9 +17,9 @@ from models import ConvLSTMCorrectionBigger, ConvLSTMCorrection, ConvLSTMCorrect
 def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode', type=str, default='detection')#choose mode: correction, detection, ctc_pad, basically which function will be called
-    parser.add_argument('-model_file', type=str, default='one-hot_encoding/results/ConvLSTMDetection3/ConvLSTMDetection3.pt')#model to perform inference on
-    parser.add_argument('-test_file', type=str, default='one-hot_encoding/data/scifi_test_test_1k_typos_2M.txt')#input test file
-    parser.add_argument('-output_file', type=str, default='one-hot_encoding/eval/ConvLSTMDetection3-test-on-2M.txt')#inference results will be saved here
+    parser.add_argument('-model_file', type=str, default='models/ConvLSTMDetection3/ConvLSTMDetection3.pt')#model to perform inference on
+    parser.add_argument('-test_file', type=str, default='data/scifi_test_test_1k_typos_2M.txt')#input test file
+    parser.add_argument('-output_file', type=str, default='models/ConvLSTMDetection3/ConvLSTMDetection3.txt')#inference results will be saved here
     return parser.parse_args()
 
 args = parseargs()

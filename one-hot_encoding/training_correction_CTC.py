@@ -27,9 +27,9 @@ def parseargs():
     parser.add_argument('-spread', type=int, default=2)#spread value of gaussan distribution of number of typos per sample
     parser.add_argument('-load_model', type=str, default='_')#file from to load parameters to continue training
     parser.add_argument('-save_model', type=str, default='ConvLSTMCorrectionCTC.pt')#file to save trained model to
-    parser.add_argument('-train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_20k.txt')#input training file, if online = 0 make sure training file contains typos, and vice versa
-    parser.add_argument('-test_train_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_train_1k_typosRF3_CTC.txt')#input validation file
-    parser.add_argument('-test_test_file', type=str, default='one-hot_encoding/data_pad/wiki_RLOAWP2_test_1k_typosRF3_CTC.txt')#input testing file
+    parser.add_argument('-train_file', type=str, default='datawiki_RLOAWP2_2M.txt')#input training file, if online = 0 make sure training file contains typos, and vice versa
+    parser.add_argument('-test_train_file', type=str, default='data_pad/wiki_RLOAWP2_train_1k_typosRF3_CTC.txt')#input validation file
+    parser.add_argument('-test_test_file', type=str, default='data_pad/wiki_RLOAWP2_test_1k_typosRF3_CTC.txt')#input testing file
     return parser.parse_args()
 
 args = parseargs()

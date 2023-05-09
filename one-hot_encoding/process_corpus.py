@@ -1,10 +1,13 @@
+# process_corpus.py
+# Author: Sebastián Chupáč
+# This file is used to create input files for testing and training from text corpora
 import torch
 import numpy as np
 from numpy import random
 
 #from txt data creates structured data in format:
 #ID<index> 
-#<sample>
+#<label>
 #<sample>
 def process_corpus(file:str):
     f = open(file, "r", encoding="UTF-8", errors='ignore')
@@ -23,7 +26,7 @@ def process_corpus(file:str):
             o.write(sample+'\n')
             o.write(sample+'\n')
             old_sample_length = sample_length
-            sample_length = random.randint(low=40, high=60)#this generates random length of line/sample/input
+            #sample_length = random.randint(low=40, high=60)#use this line to generate random length of line/sample/input
             id += 1
             if start_sample==0:
                 start_sample = old_sample_length - len(rest_of_line)
@@ -40,49 +43,7 @@ def process_corpus(file:str):
     f.close()
     o.close()
 
-def process_corpus_by_word(file:str):
-    f = open(file, "r", encoding="UTF-8", errors='ignore')
-    o = open(file[:-4]+'_random_length_BW_2M.txt', "w", encoding="UTF-8", errors='ignore')
-    id = 0
-    sample_length = 60
-    old_sample_length = 60
-    rest_of_line = ''
-    start_sample = 0
-    for line in f:
-        sample = line[start_sample:sample_length-len(rest_of_line)]
-        sample = rest_of_line + sample
-        space_index = sample.find(' ', 40, 60)
-        if space_index!= -1:
-                sample = sample[:space_index]
-                sample_length = space_index
-        #if len(sample) != sample_length: break
-        while sample.find('\n')==-1:
-            o.write(f'ID{id}\n')
-            o.write(sample+'\n')
-            o.write(sample+'\n')
-            old_sample_length = sample_length
-            #sample_length = random.randint(low=40, high=51)#this generates random length of line/sample/input
-            sample_length = 60
-            id += 1
-            if start_sample==0:
-                start_sample = old_sample_length - len(rest_of_line)
-                if start_sample == 0 and sample!=rest_of_line: start_sample = old_sample_length+1
-            else: start_sample += (old_sample_length+1)
-            sample = line[start_sample:(start_sample+sample_length)]
-            space_index = sample.find(' ', 40, 60)
-            if space_index!= -1:
-                sample = sample[:space_index]
-                sample_length = space_index
-            if len(sample) != sample_length: break
-            if id > 2_000_000:
-                break
-        rest_of_line = sample[:sample.find('\n')]+' '
-        start_sample = 0
-        if id > 2_100_000:
-            break
-    f.close()
-    o.close()
-
+#same as process_corpus but the text is spilt on whitespace generating samples with different lengths from min_length to max_length
 def process_corpus_split_by_word(file:str):
     f = open(file, "r", encoding="UTF-8", errors='ignore')
     o = open(file[:-4]+'_random_length_BW.txt', "w", encoding="UTF-8", errors='ignore')
@@ -313,6 +274,7 @@ def new_add_typos_RF_pad(file:str):
     f.close()
     o.close()
 
+#padds the input file 
 def pad(file:str):
     f = open(file, "r", encoding="UTF-8")
     o = open(file[:-4]+'P2.txt', "w", encoding="UTF-8")
@@ -336,6 +298,7 @@ def pad(file:str):
     f.close()
     o.close()
 
+#filter out characyers from txt file what are not in charlist
 def filter_non_alpha(file:str):
     f = open(file, "r", encoding="UTF-8")
     o = open(file[:-4]+'_only_alpha.txt', "w", encoding="UTF-8")
@@ -358,12 +321,12 @@ def filter_non_alpha(file:str):
     f.close()
     o.close()
 
-#filter_non_alpha('one-hot_encoding/data_news/news_test.txt')
-#process_corpus('one-hot_encoding/data_pad/wikipedia_fil_only_alpha.txt')
-new_add_typos_RF_pad('one-hot_encoding/data_news/news_test_RLOAWP2_2k.txt')
-#process_corpus_split_by_word('one-hot_encoding/data_news/news_test_only_alpha.txt')
-#pad('one-hot_encoding/data_news/news_test_RLOAW.txt')
-#filter_non_alpha('one-hot_encoding/data_pad/internet_archive_scifi_v3.txt')
+#example order how to call functions for processing corpus
+#filter_non_alpha('')
+#process_corpus('')
+#process_corpus_split_by_word('')
+#pad('')
+#new_add_typos_RF_pad('')
 
 
 
