@@ -1,3 +1,6 @@
+# models.py
+# Author: Sebastián Chupáč
+# This file contains classes for all proposed architectures. 
 import torch
 from torch import nn
 
@@ -353,7 +356,8 @@ class NeuralNetworkCorrection2(nn.Module):
 #----------------------------------------
 
 #V========== DETECTION MODELS ==========V
-
+#                              input size -> output size
+#    text_length(50) x charset_length(69) -> text_length x 1
 class ConvLSTMDetection(nn.Module):
     def __init__(self):
         super().__init__()
@@ -392,6 +396,8 @@ class ConvLSTMDetection(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+#                              input size -> output size
+#    text_length(50) x charset_length(69) -> text_length x 1
 class ConvLSTMDetectionBigger(nn.Module):
     def __init__(self):
         super().__init__()
@@ -446,7 +452,8 @@ class ConvLSTMDetectionBigger(nn.Module):
 #-----------------------------------------
 
 #V========== CORRECTION MODELS ==========V
-
+#                              input size -> output size
+#    text_length(50) x charset_length(69) -> text_length x 69
 class ConvLSTMCorrection(nn.Module):
     def __init__(self):
         super().__init__()
@@ -479,6 +486,8 @@ class ConvLSTMCorrection(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+#                              input size -> output size
+#    text_length(50) x charset_length(69) -> text_length x 69
 class ConvLSTMCorrectionBigger(nn.Module):
     def __init__(self):
         super().__init__()
@@ -519,6 +528,9 @@ class ConvLSTMCorrectionBigger(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+
+#                              input size -> output size
+#    text_length(73) x charset_length(90) -> text_length+10(83) x 90
 class ConvLSTMCorrectionCTC(nn.Module):
     def __init__(self):
         super().__init__()
@@ -551,6 +563,8 @@ class ConvLSTMCorrectionCTC(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+#                              input size -> output size
+#    text_length(73) x charset_length(90) -> text_length+10(83) x 90
 class ConvLSTMCorrectionCTCBigger(nn.Module):
     def __init__(self):
         super().__init__()
@@ -595,6 +609,8 @@ class ConvLSTMCorrectionCTCBigger(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
+#                              input size -> output size
+#    text_length(73) x charset_length(90) -> text_length+2(75) x 90
 class ConvLSTMCorrectionCTCBiggerPad(nn.Module):
     def __init__(self):
         super().__init__()
@@ -639,7 +655,8 @@ class ConvLSTMCorrectionCTCBiggerPad(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
-    
+#                              input size -> output size
+#    text_length(73) x charset_length(90) -> text_lengthx2(146) x 90
 class ConvLSTMCorrectionCTCBiggerPad2x(nn.Module):
     def __init__(self):
         super().__init__()
@@ -736,7 +753,4 @@ class UNetCorrectionCTCBiggerPad(nn.Module):
         x = x.permute(1, 2, 0)
         return self.conv2(x)
     
-
-
-
 #---------------------------------------------

@@ -1,3 +1,7 @@
+# cudann.py
+# Author: Sebastián Chupáč
+# This script is only a quick check if cuda works, and if cudaNN computing capability version is supported
+
 import torch
 from torch import nn
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
